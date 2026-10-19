@@ -2,8 +2,9 @@
 <plan id="P01" name="Minta szoba 266 x 220" unit="mm">
   <!-- The room coordinates are the finished interior faces, measured in millimetres. -->
   <viewerStart id="VS01" mode="door" doorId="D01" roomId="R01" height="1500" inwardOffset="100" lookAt="roomCenter" lookHeight="1500" />
+  <lighting id="L01" type="diffuse" ambientColor="#E1E3E8" ambientIntensity="0.85" color="#FFFFFF" intensity="0.35" rotationX="50" rotationY="-30" shadows="false" />
   <textures><texture id="T01" color="#FFFFFF" image="" rotation="0" tileWidth="1000" tileHeight="1000" mode="stretch" fromHeight="0" toHeight="3000"/></textures>
-  <wallFinishes><finish id="TF01" type="tile" name="TUZZI Falicsempe feher fenyes" productCode="32645121" tileWidth="600" tileHeight="297" thickness="8" startHeight="800" rows="5" groutWidth="2" groutColor="#B6B0A9" surface="glossy" color="#EEECE6" /></wallFinishes>
+  <wallFinishes><finish id="TF01" type="tile" name="TUZZI Falicsempe feher fenyes" productCode="32645121" tileWidth="600" tileHeight="297" thickness="8" startHeight="800" rows="5" groutWidth="2" groutColor="#B6B0A9" surface="glossy" smoothness="0.7" texture="Textures/tuzzi-tile-base64" color="#FFFFFF" /></wallFinishes>
   <models><model id="M01" type="castIronRadiator" name="Ontottvas tagos radiator" sections="12" color="#D6D1BF" /></models>
   <floorFinishes><finish id="FL01" roomId="R01" type="tile" name="HELIOS greslap szurke fahatasu" productCode="29850255" tileWidth="600" tileHeight="200" thickness="8.3" direction="y" stagger="0.5" groutWidth="2" groutColor="#B6B0A9" color="#FFFFFF" texture="Textures/helios" surface="matte" smoothness="0.12" /></floorFinishes>
   <rooms><room id="R01" name="Konyha" floorHeight="0" heightStart="0" heightEnd="3000"><point id="PT01" x="0" y="0"/><point id="PT02" x="2660" y="0"/><point id="PT03" x="2660" y="2200"/><point id="PT04" x="0" y="2200"/></room></rooms>
