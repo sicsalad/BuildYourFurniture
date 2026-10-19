@@ -260,6 +260,11 @@ namespace BuildYourFurniture
                 var min=pts[0]; var max=pts[0]; foreach(var p in pts){ min=Vector2.Min(min,p);max=Vector2.Max(max,p); }
                 Cube("Floor",new Vector3((min.x+max.x)/2,-.05f,(min.y+max.y)/2),new Vector3(max.x-min.x,.1f,max.y-min.y),Color.gray);
             }
+            FloorTileRenderer.Build(plan, (name, position, size, color, rotation) =>
+            {
+                var element = Cube(name, position, size, color);
+                element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
+            });
             PlanGeometryRenderer.Build(plan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
@@ -296,6 +301,18 @@ namespace BuildYourFurniture
                     if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", .76f);
                     if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", .76f);
                 }
+            }
+            if (name.StartsWith("FL01_"))
+            {
+                var floorTexture = Resources.Load<Texture2D>("Textures/helios");
+                if (floorTexture)
+                {
+                    mat.mainTexture = floorTexture;
+                    if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", floorTexture);
+                }
+                else mat.color = new Color(.68f, .67f, .65f);
+                if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", .12f);
+                if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", .12f);
             }
             go.GetComponent<Renderer>().material=mat; geometry.Add(go); return go;
         }
