@@ -6,6 +6,9 @@ using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace BuildYourFurniture
 {
@@ -21,6 +24,9 @@ namespace BuildYourFurniture
         readonly List<GameObject> geometry = new List<GameObject>();
         Camera worldCamera;
         bool mouseLook;
+        float cameraYaw, cameraPitch;
+        Vector3 cameraHome;
+        Quaternion cameraHomeRotation;
         string status = "";
         static float N(XElement e, string key, float fallback = 0) => float.TryParse((string)e.Attribute(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
         static string S(XElement e, string key, string fallback = "") => (string)e.Attribute(key) ?? fallback;
@@ -173,13 +179,65 @@ namespace BuildYourFurniture
             if (pendingPath != null) { var p=pendingPath; pendingPath=null; TryImport(p); }
             if (pendingError != null) { status=pendingError; pendingError=null; }
             if (current != "viewer" || !worldCamera) return;
-            var tr=worldCamera.transform;
-            if (Input.GetMouseButtonDown(1)) mouseLook=true;
-            if (Input.GetMouseButtonUp(1)) mouseLook=false;
-            if (mouseLook) { tr.Rotate(Vector3.up,Input.GetAxis("Mouse X")*3,Space.World); tr.Rotate(Vector3.right,-Input.GetAxis("Mouse Y")*3,Space.Self); }
-            var speed=3f*Time.deltaTime;
-            tr.Translate(new Vector3(Input.GetAxis("Horizontal"),(Input.GetKey(KeyCode.E)?1:0)-(Input.GetKey(KeyCode.Q)?1:0),Input.GetAxis("Vertical"))*speed,Space.Self);
-            tr.Translate(Vector3.forward*Input.mouseScrollDelta.y*.4f,Space.Self);
+            var tr = worldCamera.transform;
+            float horizontal = 0f, forward = 0f, vertical = 0f, wheel = 0f;
+            float lookX = 0f, lookY = 0f;
+            bool rightDown = false, reset = false, fast = false;
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var mouse = Mouse.current;
+            if (keyboard != null)
+            {
+                horizontal = (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f);
+                forward = (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f);
+                vertical = (keyboard.eKey.isPressed ? 1f : 0f) - (keyboard.qKey.isPressed ? 1f : 0f);
+                fast = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
+                reset = keyboard.rKey.wasPressedThisFrame;
+            }
+            if (mouse != null)
+            {
+                rightDown = mouse.rightButton.isPressed;
+                var delta = mouse.delta.ReadValue();
+                lookX = delta.x; lookY = delta.y;
+                wheel = mouse.scroll.ReadValue().y / 120f;
+            }
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            horizontal = (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f);
+            forward = (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f);
+            vertical = (Input.GetKey(KeyCode.E) ? 1f : 0f) - (Input.GetKey(KeyCode.Q) ? 1f : 0f);
+            fast = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            reset = Input.GetKeyDown(KeyCode.R);
+            rightDown = Input.GetMouseButton(1);
+            lookX = Input.GetAxisRaw("Mouse X"); lookY = Input.GetAxisRaw("Mouse Y");
+            wheel = Input.mouseScrollDelta.y;
+#endif
+            if (reset) { tr.position = cameraHome; tr.rotation = cameraHomeRotation; SyncCameraAngles(); }
+            if (rightDown)
+            {
+                // Mouse deltas are pixels with the new Input System and axis values with legacy input.
+#if ENABLE_INPUT_SYSTEM
+                float sensitivity = .15f;
+#else
+                float sensitivity = 3f;
+#endif
+                cameraYaw += lookX * sensitivity;
+                cameraPitch = Mathf.Clamp(cameraPitch - lookY * sensitivity, -89f, 89f);
+                tr.rotation = Quaternion.Euler(cameraPitch, cameraYaw, 0f);
+            }
+            float speed = (fast ? 9f : 3f) * Time.deltaTime;
+            var planarForward = Vector3.ProjectOnPlane(tr.forward, Vector3.up).normalized;
+            var planarRight = Vector3.ProjectOnPlane(tr.right, Vector3.up).normalized;
+            var direction = planarRight * horizontal + planarForward * forward + Vector3.up * vertical;
+            if (direction.sqrMagnitude > 1f) direction.Normalize();
+            tr.position += direction * speed;
+            if (Mathf.Abs(wheel) > .001f) tr.position += tr.forward * wheel * .45f;
+        }
+        void SyncCameraAngles()
+        {
+            if (!worldCamera) return;
+            var angles = worldCamera.transform.eulerAngles;
+            cameraYaw = angles.y;
+            cameraPitch = Mathf.DeltaAngle(0f, angles.x);
         }
         void BuildGeometry()
         {
@@ -187,6 +245,9 @@ namespace BuildYourFurniture
             worldCamera=go.GetComponent<Camera>(); worldCamera.depth=0;
             go.transform.position=new Vector3(1.33f,2.8f,-4.5f);
             go.transform.LookAt(new Vector3(1.33f,1.1f,1.1f));
+            cameraHome = go.transform.position;
+            cameraHomeRotation = go.transform.rotation;
+            SyncCameraAngles();
             var light=new GameObject("Viewer Light",typeof(Light)); geometry.Add(light);
             light.GetComponent<Light>().type=LightType.Directional; light.transform.rotation=Quaternion.Euler(50,-30,0);
             if (plan == null) return;
