@@ -90,6 +90,59 @@ namespace BuildYourFurniture
             renderer.receiveShadows=false;
             register(go);
         }
+        // Fronts attached to cabinets use the same placement and rotation as the carcass.
+        public static void BuildCabinetFronts(XDocument plan,Action<GameObject> register)
+        {
+            var section=plan?.Root?.Element("cabinetry");
+            var models=plan?.Root?.Element("models");
+            if(section==null||models==null)return;
+            var cabinets=section.Elements("cabinet").ToList();
+            var byId=cabinets.ToDictionary(e=>S(e,"id"));
+            var placements=new Dictionary<string,Vector2>();
+            var angles=new Dictionary<string,float>();
+            var resolving=new HashSet<string>();
+            foreach(var cabinet in cabinets)
+                CabinetRenderer.Resolve(cabinet,byId,placements,angles,resolving);
+            foreach(var cabinet in cabinets)
+            {
+                string id=S(cabinet,"id");
+                float width=N(cabinet,"width")/1000f;
+                float depth=N(cabinet,"depth")/1000f;
+                float cursor=N(cabinet,"plinth",S(cabinet,"type")=="empty"?0:80)/1000f;
+                var parts=new List<Tuple<XElement,float,float>>();
+                var appliance=cabinet.Element("appliance");
+                if(appliance!=null)parts.Add(Tuple.Create(appliance,0f,N(appliance,"height",845)/1000f));
+                var sections=cabinet.Element("sections");
+                if(sections!=null)foreach(var part in sections.Elements("section"))
+                {
+                    float h=N(part,"height")/1000f;
+                    if(S(part,"modelId")!="")parts.Add(Tuple.Create(part,cursor,h));
+                    cursor+=h;
+                }
+                foreach(var part in parts)
+                {
+                    var model=models.Elements("model").FirstOrDefault(m=>S(m,"id")==S(part.Item1,"modelId"));
+                    if(model==null)continue;
+                    var tex=LoadTexture(S(model,"texture"));
+                    if(!tex)continue;
+                    float w=N(part.Item1,"width",N(model,"width",595))/1000f;
+                    float h=N(part.Item1,"height",N(model,"height",595))/1000f;
+                    float scale=Mathf.Min(1f,Mathf.Min((width-.008f)/w,part.Item3/h));
+                    w*=scale;h*=scale;
+                    float z=S(cabinet,"type")=="empty"?-N(part.Item1,"depth",N(model,"depth",510))/2000f-.003f:-depth*.5f-.023f;
+                    float y=part.Item2+part.Item3*.5f;
+                    var center=placements[id];
+                    Quaternion rotation=Quaternion.Euler(0,angles[id],0);
+                    Func<Vector3,Vector3> transform=p=>new Vector3(center.x,y,center.y)+rotation*p;
+                    Face(id+"_"+S(model,"id")+"_front",new[]{
+                        transform(new Vector3(-w*.5f,-h*.5f,z)),
+                        transform(new Vector3(w*.5f,-h*.5f,z)),
+                        transform(new Vector3(w*.5f,h*.5f,z)),
+                        transform(new Vector3(-w*.5f,h*.5f,z))
+                    },Mat(Color.white,tex,N(model,"smoothness",.25f)),register);
+                }
+            }
+        }
         public static void Build(XDocument plan,Action<GameObject> register)
         {
             if(plan==null || plan.Root==null)return;
