@@ -339,7 +339,11 @@ namespace BuildYourFurniture
             FloorTileRenderer.Build(plan, element => geometry.Add(element));
             WallTileMeshRenderer.Build(plan, element => geometry.Add(element));
             ApplianceTextureRenderer.Build(plan, element => geometry.Add(element));
-            CountertopRenderer.Build(plan, element => geometry.Add(element), Cube);
+            CountertopRenderer.Build(plan, element => geometry.Add(element), (name, position, size, color, rotation) =>
+            {
+                var element = Cube(name, position, size, color);
+                element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
+            });
             PlanGeometryRenderer.Build(plan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
