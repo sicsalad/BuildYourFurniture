@@ -17,5 +17,37 @@
   <doors><door id="D01" wallId="W04" offset="650" bottom="0" width="750" height="2100" fill="empty"/></doors>
   <windows><window id="WIN01" wallId="W01" offset="580" bottom="1200" width="1500" height="1600" fill="solid" color="#89BDD3"/></windows>
   <radiators><radiator id="RAD01" wallId="W01" offset="830" bottom="100" length="1200" height="730" depth="210" sections="12" modelId="M01" color="#D6D1BF"/></radiators>
-  <furniture><item id="F01" modelId="M02" roomId="R01" type="refrigerator" x="290" y="1870" rotation="90" /><item id="F02" modelId="M03" roomId="R01" type="washingMachine" x="2350" y="1810" rotation="90" /> <item id="F03" modelId="M04" roomId="R01" type="oven" x="2350" y="1110" rotation="90" bottom="250" /> <item id="F04" modelId="M06" roomId="R01" type="countertop" x="2350" y="1130" rotation="90" bottom="850" /> <item id="F05" modelId="M05" roomId="R01" type="hob" x="2350" y="1110" rotation="90" bottom="888" /></furniture>
+  <furniture><item id="F08" modelId="M02" roomId="R01" type="refrigerator" x="290" y="1870" rotation="90" /></furniture>
+  <cabinetry>
+    <defaults bodyColor="#20385B" frontColor="#20385B" plinthColor="#A8A9AA" handleColor="#101114" boardThickness="18" backThickness="6" edgeBandThickness="2" braceWidth="100" drawerGap="2" handleWidth="120" handleDiameter="10" frontFinish="mattePainted" frontCornerRadius="2" />
+    <!-- Cabinet local -Z is front; rotation=90 faces the entrance side of W02. -->
+    <cabinet id="F01" name="Mosogep helye" type="empty" kind="base" width="700" height="860" depth="560" plinth="0" x="2380" y="350" rotation="90">
+      <edges left="front,top,back,bottom" right="front,top,back,bottom" />
+      <appliance modelId="M03" width="595" height="845" depth="510" color="#303034" />
+    </cabinet>
+    <cabinet id="F02" name="Suto szekreny" type="normal" kind="base" width="600" height="860" depth="560" plinth="80" alignTo="F01" side="left">
+      <sections><section type="oven" height="600" modelId="M04" /><section type="drawer" height="180" /></sections>
+    </cabinet>
+    <cabinet id="F03" name="Haromfiokos 30" type="normal" kind="base" width="300" height="860" depth="560" plinth="80" alignTo="F02" side="left">
+      <sections><section type="drawer" height="380" /><section type="drawer" height="250" /><section type="drawer" height="150" /></sections>
+    </cabinet>
+    <cabinet id="F04" name="Sarok ures" type="empty" kind="base" width="560" height="860" depth="560" plinth="80" alignTo="F03" side="left" />
+    <cabinet id="F05" name="Sarok fiokos 39" type="normal" kind="base" width="390" height="860" depth="560" plinth="80" x="1800" y="1920" rotation="0">
+      <sections><section type="drawer" height="780" /></sections>
+    </cabinet>
+    <cabinet id="F06" name="Haromfiokos 60" type="normal" kind="base" width="600" height="860" depth="560" plinth="80" alignTo="F05" side="left">
+      <sections><section type="drawer" height="380" /><section type="drawer" height="250" /><section type="drawer" height="150" /></sections>
+    </cabinet>
+    <cabinet id="F07" name="Mosogatogep helye" type="normal" kind="base" width="450" height="860" depth="560" plinth="0" alignTo="F06" side="left">
+      <sections><section type="dishwasher" height="780" color="#7E8083" /></sections>
+    </cabinet>
+    <countertops>
+      <countertop id="CT01" name="Jobb oldali munkalap" x="2380" y="1080" rotation="90" width="2160" depth="600" thickness="40" bottom="860" texture="Textures/munkalap" />
+      <countertop id="CT02" name="Ablakkal szemkozti munkalap" x="1320" y="1920" rotation="0" width="1440" depth="600" thickness="40" bottom="860" texture="Textures/munkalap" />
+    </countertops>
+    <fixtures>
+      <fixture id="HOB01" type="gasHob" modelId="M05" countertopId="CT02" offsetFromWindow="300" width="600" height="130" depth="520" texture="Textures/tuzhely" cutout="true" />
+      <fixture id="SINK01" type="sink" countertopId="CT01" position="corner" bowls="2" largeBowl="true" smallBowl="true" drainer="small" cutout="true" />
+    </fixtures>
+  </cabinetry>
 </plan>
