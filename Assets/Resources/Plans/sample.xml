@@ -4,6 +4,7 @@
   <textures><texture id="T01" color="#FFFFFF" image="" rotation="0" tileWidth="1000" tileHeight="1000" mode="stretch" fromHeight="0" toHeight="3000"/></textures>
   <wallFinishes><finish id="TF01" type="tile" name="TUZZI Falicsempe feher fenyes" productCode="32645121" tileWidth="600" tileHeight="297" thickness="8" startHeight="800" rows="5" groutWidth="2" groutColor="#EDE9DF" surface="glossy" color="#EEECE6" /></wallFinishes>
   <models><model id="M01" type="castIronRadiator" name="Ontottvas tagos radiator" sections="12" color="#D6D1BF" /></models>
+  <floorFinishes><finish id="FL01" roomId="R01" type="tile" name="HELIOS greslap szurke fahatasu" productCode="29850255" tileWidth="600" tileHeight="200" thickness="8.3" direction="x" stagger="0.5" groutWidth="2" groutColor="#AAA59F" texture="Textures/helios" surface="matte" /></floorFinishes>
   <rooms><room id="R01" name="Konyha" floorHeight="0" heightStart="0" heightEnd="3000"><point id="PT01" x="0" y="0"/><point id="PT02" x="2660" y="0"/><point id="PT03" x="2660" y="2200"/><point id="PT04" x="0" y="2200"/></room></rooms>
   <walls>
     <wall id="W01" x="0" y="0" x1="2660" y1="0" heightStart="0" heightEnd="3000" thickness="120" leftTexture="T01" rightTexture="T01"/>
