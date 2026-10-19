@@ -141,7 +141,7 @@ namespace BuildYourFurniture
             }
 
         }
-        static void Resolve(XElement e,Dictionary<string,XElement> byId,
+        public static void Resolve(XElement e,Dictionary<string,XElement> byId,
             Dictionary<string,Vector2> placements,Dictionary<string,float> angles,HashSet<string> resolving)
         {
             string id=S(e,"id");
