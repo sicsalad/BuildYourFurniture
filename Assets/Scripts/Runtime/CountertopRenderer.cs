@@ -143,15 +143,24 @@ namespace BuildYourFurniture
                     else if(type=="sink")
                     {
                         var steel=C(S(fixture,"color","#B8BCC0"),Color.gray);
-                        cube(S(fixture,"id")+"_rim",tr(fx,bottom+thickness+.006f,fz),
-                            new Vector3(fw,.012f,fd),steel,angle);
-                        // Visible two-bowl layout: recessed dark basins with stainless rims.
+                        float rim=.018f;
+                        float surface=bottom+thickness+.005f;
+                        // Four narrow strips around the opening, not a solid plate over it.
+                        cube(S(fixture,"id")+"_rimFront",tr(fx,surface,fz-fd*.5f+rim*.5f),
+                            new Vector3(fw,.009f,rim),steel,angle);
+                        cube(S(fixture,"id")+"_rimBack",tr(fx,surface,fz+fd*.5f-rim*.5f),
+                            new Vector3(fw,.009f,rim),steel,angle);
+                        cube(S(fixture,"id")+"_rimLeft",tr(fx-fw*.5f+rim*.5f,surface,fz),
+                            new Vector3(rim,.009f,fd),steel,angle);
+                        cube(S(fixture,"id")+"_rimRight",tr(fx+fw*.5f-rim*.5f,surface,fz),
+                            new Vector3(rim,.009f,fd),steel,angle);
+                        // Recessed basins are visibly below the worktop.
                         float bowlWidth=fw*.39f;
                         for(int b=0;b<2;b++)
                         {
                             float bx=fx+(b==0?-fw*.235f:fw*.235f);
-                            cube(S(fixture,"id")+"_bowl"+b,tr(bx,bottom+thickness+.013f,fz),
-                                new Vector3(bowlWidth,.004f,fd*.68f),
+                            cube(S(fixture,"id")+"_bowl"+b,tr(bx,bottom+thickness-.10f,fz),
+                                new Vector3(bowlWidth,.008f,fd*.68f),
                                 C(S(fixture,"bowlColor","#454B50"),Color.gray),angle);
                         }
                     }
