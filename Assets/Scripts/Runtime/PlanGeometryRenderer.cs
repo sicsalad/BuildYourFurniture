@@ -88,6 +88,7 @@ namespace BuildYourFurniture
 
             }
             RoomDetailRenderer.Build(plan, cube);
+            FurnitureModelRenderer.Build(plan, cube);
         }
     }
 }
