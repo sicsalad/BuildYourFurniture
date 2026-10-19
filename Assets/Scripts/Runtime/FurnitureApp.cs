@@ -259,15 +259,11 @@ namespace BuildYourFurniture
                 var min=pts[0]; var max=pts[0]; foreach(var p in pts){ min=Vector2.Min(min,p);max=Vector2.Max(max,p); }
                 Cube("Floor",new Vector3((min.x+max.x)/2,-.05f,(min.y+max.y)/2),new Vector3(max.x-min.x,.1f,max.y-min.y),Color.gray);
             }
-            foreach(var w in plan.Root.Element("walls").Elements("wall"))
+            PlanGeometryRenderer.Build(plan, (name, position, size, color, rotation) =>
             {
-                var a=new Vector2(N(w,"x")/1000f,N(w,"y")/1000f);
-                var b=new Vector2(N(w,"x1")/1000f,N(w,"y1")/1000f);
-                var d=b-a; var bottom=N(w,"heightStart")/1000f; var top=N(w,"heightEnd",2700)/1000f;
-                var cube=Cube("Wall",new Vector3((a.x+b.x)/2,(bottom+top)/2,(a.y+b.y)/2),
-                    new Vector3(d.magnitude,N(w,"heightEnd",2700)/1000f-bottom,N(w,"thickness",120)/1000f),Color.white);
-                cube.transform.rotation=Quaternion.Euler(0,-Mathf.Atan2(d.y,d.x)*Mathf.Rad2Deg,0);
-            }
+                var element = Cube(name, position, size, color);
+                element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
+            });
         }
         GameObject Cube(string name,Vector3 pos,Vector3 scale,Color color)
         {
