@@ -197,7 +197,8 @@ namespace BuildYourFurniture
             var lines=new List<string>{"Elem;Darab;Hossz (mm);Magasság (mm);Vastagság (mm)"};
             if(plan != null) foreach(var w in plan.Root.Element("walls").Elements("wall"))
             {
-                var dx=N(w,"x1")-N(w,"x"),dy=N(w,"y1")-N(w,"y");
+                float dx = N(w, "x1") - N(w, "x");
+                float dy = N(w, "y1") - N(w, "y");
                 lines.Add("Fal;1;"+Mathf.RoundToInt(Mathf.Sqrt(dx*dx+dy*dy))+";"+(N(w,"heightEnd")-N(w,"heightStart"))+";"+N(w,"thickness"));
             }
             return string.Join("\n",lines);
