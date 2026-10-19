@@ -338,6 +338,7 @@ namespace BuildYourFurniture
             }
             FloorTileRenderer.Build(plan, element => geometry.Add(element));
             WallTileMeshRenderer.Build(plan, element => geometry.Add(element));
+            ApplianceTextureRenderer.Build(plan, element => geometry.Add(element));
             PlanGeometryRenderer.Build(plan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
