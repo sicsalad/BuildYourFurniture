@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plan id="P01" name="Minta szoba 266 x 220" unit="mm">
   <!-- The room coordinates are the finished interior faces, measured in millimetres. -->
+  <viewerStart id="VS01" mode="door" doorId="D01" roomId="R01" height="1500" inwardOffset="100" lookAt="roomCenter" lookHeight="1500" />
   <textures><texture id="T01" color="#FFFFFF" image="" rotation="0" tileWidth="1000" tileHeight="1000" mode="stretch" fromHeight="0" toHeight="3000"/></textures>
   <wallFinishes><finish id="TF01" type="tile" name="TUZZI Falicsempe feher fenyes" productCode="32645121" tileWidth="600" tileHeight="297" thickness="8" startHeight="800" rows="5" groutWidth="2" groutColor="#B6B0A9" surface="glossy" color="#EEECE6" /></wallFinishes>
   <models><model id="M01" type="castIronRadiator" name="Ontottvas tagos radiator" sections="12" color="#D6D1BF" /></models>
