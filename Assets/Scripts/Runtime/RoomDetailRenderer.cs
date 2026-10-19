@@ -116,7 +116,7 @@ namespace BuildYourFurniture
                                         float cy = (sy0 + sy1) * .5f;
                                         if (groutWidth > 0f)
                                         {
-                                            Vector2 backing = a + along * cx + normal * (tileDepth + .0005f);
+                                            Vector2 backing = a + along * cx + normal * (wallThickness * .5f + .0015f);
                                             cube("Grout_" + tileId, new Vector3(backing.x, cy, backing.y),
                                                 new Vector3(sx1 - sx0, sy1 - sy0, .001f), groutColor, angle);
                                         }
@@ -124,7 +124,7 @@ namespace BuildYourFurniture
                                         // touch without a deliberate gap.
                                         float faceWidth = Mathf.Max(.0005f, sx1 - sx0 - groutWidth);
                                         float faceHeight = Mathf.Max(.0005f, sy1 - sy0 - groutWidth);
-                                        Vector2 face = a + along * cx + normal * (tileDepth + .002f);
+                                        Vector2 face = a + along * cx + normal * (wallThickness * .5f + tileDepth + .003f);
                                         cube(tileId, new Vector3(face.x, cy, face.y),
                                             new Vector3(faceWidth, faceHeight, .001f),
                                             TileColor(col, row), angle);
