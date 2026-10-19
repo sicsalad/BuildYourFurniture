@@ -31,7 +31,21 @@ namespace BuildYourFurniture
             {
                 string modelId = S(item, "modelId");
                 var model = models.Elements("model").FirstOrDefault(m => S(m, "id") == modelId);
-                if (model == null || S(model, "type") != "bottomFreezerRefrigerator") continue;
+                if (model == null) continue;
+                string modelType = S(model, "type");
+                if (modelType == "texturedAppliance" || modelType == "texturedHob" || modelType == "texturedCountertop")
+                {
+                    float width = N(model, "width", 600f) / 1000f;
+                    float height = N(model, "height", 600f) / 1000f;
+                    float depth = N(model, "depth", 600f) / 1000f;
+                    float baseHeight = N(item, "bottom") / 1000f;
+                    Color tint = C(model, "color", "#333333");
+                    cube(S(item, "id") + "_body",
+                        new Vector3(N(item, "x") / 1000f, baseHeight + height * .5f, N(item, "y") / 1000f),
+                        new Vector3(width, height, depth), tint, N(item, "rotation"));
+                    continue;
+                }
+                if (modelType != "bottomFreezerRefrigerator") continue;
                 string id = S(item, "id", "Fridge");
                 float w = N(model, "width", 550) / 1000f;
                 float h = N(model, "height", 1824) / 1000f;
