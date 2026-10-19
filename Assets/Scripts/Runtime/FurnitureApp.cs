@@ -306,8 +306,27 @@ namespace BuildYourFurniture
             cameraHome = go.transform.position;
             cameraHomeRotation = go.transform.rotation;
             SyncCameraAngles();
+            // Soft room illumination is configured in the plan XML, not hard-coded.
+            var lighting = plan != null && plan.Root != null ? plan.Root.Element("lighting") : null;
+            Color ambientColor = new Color(.88f,.89f,.91f);
+            Color keyColor = Color.white;
+            if (lighting != null)
+            {
+                Color parsed;
+                if (ColorUtility.TryParseHtmlString(S(lighting,"ambientColor","#E1E3E8"),out parsed)) ambientColor=parsed;
+                if (ColorUtility.TryParseHtmlString(S(lighting,"color","#FFFFFF"),out parsed)) keyColor=parsed;
+            }
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = ambientColor * (lighting == null ? .85f : N(lighting,"ambientIntensity",.85f));
             var light=new GameObject("Viewer Light",typeof(Light)); geometry.Add(light);
-            light.GetComponent<Light>().type=LightType.Directional; light.transform.rotation=Quaternion.Euler(50,-30,0);
+            var roomLight=light.GetComponent<Light>();
+            roomLight.type=LightType.Directional;
+            roomLight.color=keyColor;
+            roomLight.intensity=lighting == null ? .35f : N(lighting,"intensity",.35f);
+            roomLight.shadows=LightShadows.None;
+            light.transform.rotation=Quaternion.Euler(
+                lighting == null ? 50f : N(lighting,"rotationX",50f),
+                lighting == null ? -30f : N(lighting,"rotationY",-30f),0f);
             if (plan == null) return;
             foreach(var room in plan.Root.Element("rooms").Elements("room"))
             {
@@ -318,6 +337,7 @@ namespace BuildYourFurniture
                 Cube("Floor",new Vector3((min.x+max.x)/2,-.05f,(min.y+max.y)/2),new Vector3(max.x-min.x,.1f,max.y-min.y),Color.gray);
             }
             FloorTileRenderer.Build(plan, element => geometry.Add(element));
+            WallTileMeshRenderer.Build(plan, element => geometry.Add(element));
             PlanGeometryRenderer.Build(plan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
