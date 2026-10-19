@@ -56,58 +56,79 @@ namespace BuildYourFurniture
                     float tileHeight = N(finish, "tileHeight", 297f) / 1000f;
                     float tileDepth = N(finish, "thickness", 8f) / 1000f;
                     float startHeight = N(finish, "startHeight", 800f) / 1000f;
+                    float groutWidth = Mathf.Max(0f, N(finish, "groutWidth", 2f)) / 1000f;
+                    Color groutColor;
+                    if (!ColorUtility.TryParseHtmlString(S(finish, "groutColor", "#EDE9DF"), out groutColor))
+                        groutColor = new Color(.93f, .91f, .87f);
                     int rows = Mathf.Clamp(Mathf.RoundToInt(N(finish, "rows", 5)), 0, 50);
                     if (tileWidth > 0f && tileHeight > 0f)
-                    for (int row = 0; row < rows; row++)
                     {
-                        float y0 = startHeight + row * tileHeight;
-                        float y1 = y0 + tileHeight;
-                        int columns = Mathf.CeilToInt(length / tileWidth);
-                        for (int col = 0; col < columns; col++)
+                        // Every tile is clipped against wall openings. The backing is a thin,
+                        // non-textured grout surface; the tile face is drawn 8 mm further in.
+                        // These surfaces never share the same depth (prevents z-fighting).
+                        for (int row = 0; row < rows; row++)
                         {
-                            float x0 = col * tileWidth, x1 = Mathf.Min(length, x0 + tileWidth);
-                            // Split tile at all opening edges, preserving the opening itself.
-                            var edges = new List<float> { x0, x1 };
-                            foreach (var o in openings)
+                            float y0 = startHeight + row * tileHeight;
+                            float y1 = y0 + tileHeight;
+                            int columns = Mathf.CeilToInt(length / tileWidth);
+                            for (int col = 0; col < columns; col++)
                             {
-                                float left = N(o, "offset") / 1000f;
-                                float right = left + N(o, "width") / 1000f;
-                                if (left > x0 && left < x1) edges.Add(left);
-                                if (right > x0 && right < x1) edges.Add(right);
-                            }
-                            edges.Sort();
-                            for (int k = 0; k < edges.Count - 1; k++)
-                            {
-                                float sx0 = edges[k], sx1 = edges[k + 1];
-                                if (sx1 - sx0 < .001f) continue;
-                                float middle = (sx0 + sx1) * .5f;
-                                var verticalEdges = new List<float> { y0, y1 };
+                                float x0 = col * tileWidth, x1 = Mathf.Min(length, x0 + tileWidth);
+                                var edges = new List<float> { x0, x1 };
                                 foreach (var o in openings)
                                 {
                                     float left = N(o, "offset") / 1000f;
                                     float right = left + N(o, "width") / 1000f;
-                                    if (middle < left || middle > right) continue;
-                                    float lower = N(o, "bottom") / 1000f;
-                                    float upper = lower + N(o, "height") / 1000f;
-                                    if (lower > y0 && lower < y1) verticalEdges.Add(lower);
-                                    if (upper > y0 && upper < y1) verticalEdges.Add(upper);
+                                    if (left > x0 && left < x1) edges.Add(left);
+                                    if (right > x0 && right < x1) edges.Add(right);
                                 }
-                                verticalEdges.Sort();
-                                for (int v = 0; v < verticalEdges.Count - 1; v++)
+                                edges.Sort();
+                                for (int k = 0; k < edges.Count - 1; k++)
                                 {
-                                    float sy0 = verticalEdges[v], sy1 = verticalEdges[v + 1];
-                                    if (sy1 - sy0 < .001f) continue;
-                                    float ym = (sy0 + sy1) * .5f;
-                                    if (openings.Any(o => Intersects(sx0, sx1, N(o, "offset") / 1000f,
-                                        (N(o, "offset") + N(o, "width")) / 1000f) &&
-                                        ym > N(o, "bottom") / 1000f &&
-                                        ym < (N(o, "bottom") + N(o, "height")) / 1000f)) continue;
-                                    float grout = .0025f;
-                                    Vector2 p = a + along * ((sx0 + sx1) * .5f) + normal * (tileDepth * .5f + .001f);
-                                    cube(S(finish, "id", "TILE") + "_" + wallId + "_" + row + "_" + col + "_" + k + "_" + v,
-                                        new Vector3(p.x, (sy0 + sy1) * .5f, p.y),
-                                        new Vector3(Mathf.Max(.001f, sx1 - sx0 - grout), Mathf.Max(.001f, sy1 - sy0 - grout), tileDepth),
-                                        TileColor(col, row), angle);
+                                    float sx0 = edges[k], sx1 = edges[k + 1];
+                                    if (sx1 - sx0 < .0005f) continue;
+                                    float middle = (sx0 + sx1) * .5f;
+                                    var verticalEdges = new List<float> { y0, y1 };
+                                    foreach (var o in openings)
+                                    {
+                                        float left = N(o, "offset") / 1000f;
+                                        float right = left + N(o, "width") / 1000f;
+                                        if (middle < left || middle > right) continue;
+                                        float lower = N(o, "bottom") / 1000f;
+                                        float upper = lower + N(o, "height") / 1000f;
+                                        if (lower > y0 && lower < y1) verticalEdges.Add(lower);
+                                        if (upper > y0 && upper < y1) verticalEdges.Add(upper);
+                                    }
+                                    verticalEdges.Sort();
+                                    for (int v = 0; v < verticalEdges.Count - 1; v++)
+                                    {
+                                        float sy0 = verticalEdges[v], sy1 = verticalEdges[v + 1];
+                                        if (sy1 - sy0 < .0005f) continue;
+                                        float ym = (sy0 + sy1) * .5f;
+                                        if (openings.Any(o =>
+                                            middle > N(o, "offset") / 1000f &&
+                                            middle < (N(o, "offset") + N(o, "width")) / 1000f &&
+                                            ym > N(o, "bottom") / 1000f &&
+                                            ym < (N(o, "bottom") + N(o, "height")) / 1000f)) continue;
+
+                                        string tileId = S(finish, "id", "TILE") + "_" + wallId + "_" + row + "_" + col + "_" + k + "_" + v;
+                                        float cx = (sx0 + sx1) * .5f;
+                                        float cy = (sy0 + sy1) * .5f;
+                                        if (groutWidth > 0f)
+                                        {
+                                            Vector2 backing = a + along * cx + normal * .0015f;
+                                            cube("Grout_" + tileId, new Vector3(backing.x, cy, backing.y),
+                                                new Vector3(sx1 - sx0, sy1 - sy0, .001f), groutColor, angle);
+                                        }
+                                        // Apply grout on all four sides. With groutWidth=0, faces
+                                        // touch without a deliberate gap.
+                                        float faceWidth = Mathf.Max(.0005f, sx1 - sx0 - groutWidth);
+                                        float faceHeight = Mathf.Max(.0005f, sy1 - sy0 - groutWidth);
+                                        Vector2 face = a + along * cx + normal * (tileDepth + .002f);
+                                        cube(tileId, new Vector3(face.x, cy, face.y),
+                                            new Vector3(faceWidth, faceHeight, .001f),
+                                            TileColor(col, row), angle);
+                                    }
                                 }
                             }
                         }
