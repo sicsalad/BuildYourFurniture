@@ -139,6 +139,17 @@ namespace BuildYourFurniture
                 // Rendering visible edge-band strips will be implemented with dedicated meshes.
                 if(band<0)Debug.LogWarning("Negative edge band: "+id);
             }
+            // Countertops use XML positions and dimensions. Their photo-textured top
+            // surfaces are created separately by ApplianceTextureRenderer.
+            var countertops=section.Element("countertops");
+            if(countertops!=null)
+            foreach(var top in countertops.Elements("countertop"))
+            {
+                float w=M(N(top,"width")),d=M(N(top,"depth"));
+                float thick=M(N(top,"thickness",40)),bottom=M(N(top,"bottom",860));
+                cube(S(top,"id"),new Vector3(M(N(top,"x")),bottom+thick*.5f,M(N(top,"y"))),
+                    new Vector3(w,thick,d),ColorOf(S(top,"color","#C49B72"),Color.white),N(top,"rotation"));
+            }
         }
         static void Resolve(XElement e,Dictionary<string,XElement> byId,
             Dictionary<string,Vector2> placements,Dictionary<string,float> angles,HashSet<string> resolving)
