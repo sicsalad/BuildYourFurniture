@@ -116,7 +116,7 @@ namespace BuildYourFurniture
                                         float cy = (sy0 + sy1) * .5f;
                                         if (groutWidth > 0f)
                                         {
-                                            Vector2 backing = a + along * cx + normal * .0015f;
+                                            Vector2 backing = a + along * cx + normal * (tileDepth + .0005f);
                                             cube("Grout_" + tileId, new Vector3(backing.x, cy, backing.y),
                                                 new Vector3(sx1 - sx0, sy1 - sy0, .001f), groutColor, angle);
                                         }
