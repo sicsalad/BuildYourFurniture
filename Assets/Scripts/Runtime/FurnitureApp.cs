@@ -240,12 +240,69 @@ namespace BuildYourFurniture
             cameraYaw = angles.y;
             cameraPitch = Mathf.DeltaAngle(0f, angles.x);
         }
+        void ApplyViewerStart(Transform cameraTransform)
+        {
+            if (plan == null || plan.Root == null) return;
+            var start = plan.Root.Element("viewerStart");
+            if (start == null) return; // Backwards compatibility with older plans.
+            var rooms = plan.Root.Element("rooms");
+            if (rooms == null) return;
+            XElement room = null;
+            foreach (var candidate in rooms.Elements("room"))
+                if (S(candidate, "id") == S(start, "roomId")) { room = candidate; break; }
+            if (room == null) return;
+            var points = new List<Vector2>();
+            foreach (var point in room.Elements("point"))
+                points.Add(new Vector2(N(point, "x") / 1000f, N(point, "y") / 1000f));
+            if (points.Count < 3) return;
+            Vector2 min = points[0], max = points[0];
+            foreach (var p in points) { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+            Vector2 center = (min + max) * .5f;
+            float height = N(start, "height", 1500f) / 1000f;
+            Vector3 position = new Vector3(center.x, height, center.y);
+            if (S(start, "mode") == "door")
+            {
+                var doors = plan.Root.Element("doors");
+                var walls = plan.Root.Element("walls");
+                if (doors != null && walls != null)
+                {
+                    XElement door = null, wall = null;
+                    foreach (var d in doors.Elements("door"))
+                        if (S(d, "id") == S(start, "doorId")) { door = d; break; }
+                    if (door != null)
+                        foreach (var w in walls.Elements("wall"))
+                            if (S(w, "id") == S(door, "wallId")) { wall = w; break; }
+                    if (door != null && wall != null)
+                    {
+                        Vector2 a = new Vector2(N(wall, "x"), N(wall, "y")) / 1000f;
+                        Vector2 b = new Vector2(N(wall, "x1"), N(wall, "y1")) / 1000f;
+                        Vector2 direction = (b - a).normalized;
+                        Vector2 midpoint = a + direction * ((N(door, "offset") + N(door, "width") * .5f) / 1000f);
+                        float offset = N(start, "inwardOffset", 100f) / 1000f;
+                        Vector2 inward = (center - midpoint).normalized;
+                        Vector2 eye = midpoint + inward * offset;
+                        position = new Vector3(eye.x, height, eye.y);
+                    }
+                }
+            }
+            else if (S(start, "mode") == "position")
+            {
+                position = new Vector3(N(start, "x") / 1000f, height, N(start, "y") / 1000f);
+            }
+            cameraTransform.position = position;
+            Vector3 target = new Vector3(center.x, N(start, "lookHeight", 1500f) / 1000f, center.y);
+            if (S(start, "lookAt", "roomCenter") == "position")
+                target = new Vector3(N(start, "targetX") / 1000f, N(start, "targetHeight", 1500f) / 1000f, N(start, "targetY") / 1000f);
+            if ((target - position).sqrMagnitude > .000001f)
+                cameraTransform.LookAt(target);
+        }
         void BuildGeometry()
         {
             var go = new GameObject("Viewer Camera",typeof(Camera),typeof(AudioListener));
             worldCamera=go.GetComponent<Camera>(); worldCamera.depth=0;
             go.transform.position=new Vector3(1.33f,2.8f,-4.5f);
             go.transform.LookAt(new Vector3(1.33f,1.1f,1.1f));
+            ApplyViewerStart(go.transform);
             cameraHome = go.transform.position;
             cameraHomeRotation = go.transform.rotation;
             SyncCameraAngles();
