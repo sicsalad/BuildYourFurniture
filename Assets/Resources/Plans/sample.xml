@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plan name="Minta szoba 266 x 220" unit="mm">
+  <textures><texture id="white" color="#FFFFFF" image="" rotation="0" tileWidth="1000" tileHeight="1000" mode="stretch" fromHeight="0" toHeight="2700"/></textures>
+  <rooms><room id="room1" name="Konyha" floorHeight="0" heightStart="0" heightEnd="2700"><point x="0" y="0"/><point x="2660" y="0"/><point x="2660" y="2200"/><point x="0" y="2200"/></room></rooms>
+  <walls>
+    <wall x="0" y="0" x1="2660" y1="0" heightStart="0" heightEnd="2700" thickness="120" leftTexture="white" rightTexture="white"/>
+    <wall x="2660" y="0" x1="2660" y1="2200" heightStart="0" heightEnd="2700" thickness="120" leftTexture="white" rightTexture="white"/>
+    <wall x="2660" y="2200" x1="0" y1="2200" heightStart="0" heightEnd="2700" thickness="120" leftTexture="white" rightTexture="white"/>
+    <wall x="0" y="2200" x1="0" y1="0" heightStart="0" heightEnd="2700" thickness="120" leftTexture="white" rightTexture="white"/>
+  </walls>
+</plan>
