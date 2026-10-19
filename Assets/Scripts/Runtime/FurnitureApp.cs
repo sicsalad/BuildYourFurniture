@@ -28,6 +28,7 @@ namespace BuildYourFurniture
         Vector3 cameraHome;
         Quaternion cameraHomeRotation;
         string status = "";
+        Texture2D tileTexture;
         static float N(XElement e, string key, float fallback = 0) => float.TryParse((string)e.Attribute(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
         static string S(XElement e, string key, string fallback = "") => (string)e.Attribute(key) ?? fallback;
 
@@ -268,7 +269,34 @@ namespace BuildYourFurniture
         GameObject Cube(string name,Vector3 pos,Vector3 scale,Color color)
         {
             var go=GameObject.CreatePrimitive(PrimitiveType.Cube); go.name=name; go.transform.position=pos; go.transform.localScale=scale;
-            var mat=new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard")); mat.color=color;
+            var mat=new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+            mat.color=color;
+            if (name.StartsWith("TF01_"))
+            {
+                if (!tileTexture)
+                {
+                    var asset = Resources.Load<TextAsset>("Textures/tuzzi-tile-base64");
+                    if (asset)
+                    {
+                        try
+                        {
+                            tileTexture = new Texture2D(2, 2, TextureFormat.RGB24, false);
+                            tileTexture.LoadImage(Convert.FromBase64String(asset.text.Trim()));
+                            tileTexture.wrapMode = TextureWrapMode.Repeat;
+                            tileTexture.filterMode = FilterMode.Bilinear;
+                        }
+                        catch (Exception ex) { Debug.LogWarning("TUZZI texture decode failed: " + ex.Message); }
+                    }
+                }
+                if (tileTexture)
+                {
+                    mat.mainTexture = tileTexture;
+                    mat.color = Color.white;
+                    if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tileTexture);
+                    if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", .76f);
+                    if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", .76f);
+                }
+            }
             go.GetComponent<Renderer>().material=mat; geometry.Add(go); return go;
         }
         string MaterialsCsv()
