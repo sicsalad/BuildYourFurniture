@@ -46,8 +46,8 @@
       <countertop id="CT02" name="Ablakkal szemkozti munkalap" x="1320" y="1920" rotation="0" width="1440" depth="600" thickness="40" bottom="860" texture="Textures/munkalap" />
     </countertops>
     <fixtures>
-      <fixture id="HOB01" type="gasHob" modelId="M05" countertopId="CT02" offsetFromWindow="300" width="600" height="130" depth="520" texture="Textures/tuzhely" cutout="true" />
-      <fixture id="SINK01" type="sink" countertopId="CT01" position="corner" bowls="2" largeBowl="true" smallBowl="true" drainer="small" cutout="true" />
+      <fixture id="HOB01" type="gasHob" modelId="M05" countertopId="CT02" offsetFromWindow="300" offsetX="120" offsetY="0" width="600" height="130" depth="520" cutoutWidth="560" cutoutDepth="480" texture="Textures/tuzhely" color="#202024" cutout="true" />
+      <fixture id="SINK01" type="sink" countertopId="CT01" position="corner" offsetX="-550" offsetY="0" width="780" depth="500" cutoutWidth="740" cutoutDepth="460" bowls="2" largeBowl="true" smallBowl="true" drainer="small" color="#B8BCC0" bowlColor="#454B50" cutout="true" />
     </fixtures>
   </cabinetry>
 </plan>
