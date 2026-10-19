@@ -85,17 +85,9 @@ namespace BuildYourFurniture
                         new Vector3(N(o, "width") / 1000f, N(o, "height") / 1000f, .035f),
                         GetColor(o, new Color(.55f, .75f, .85f)), angle);
                 }
-                foreach (var radiator in Items(root, "radiators", "radiator").Where(r => S(r, "wallId") == wallId))
-                {
-                    float depth = N(radiator, "depth", 210f) / 1000f;
-                    float x = (N(radiator, "offset") + N(radiator, "length") * .5f) / 1000f;
-                    float y = (N(radiator, "bottom") + N(radiator, "height") * .5f) / 1000f;
-                    Vector2 p = a + along * x + inward * (depth * .5f + .015f);
-                    cube(S(radiator, "id"), new Vector3(p.x, y, p.y),
-                        new Vector3(N(radiator, "length") / 1000f, N(radiator, "height") / 1000f, depth),
-                        GetColor(radiator, Color.gray), angle);
-                }
+
             }
+            RoomDetailRenderer.Build(plan, cube);
         }
     }
 }
