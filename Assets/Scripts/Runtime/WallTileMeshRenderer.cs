@@ -69,8 +69,8 @@ namespace BuildYourFurniture
             uv.Add(new Vector2(u0,v0)); uv.Add(new Vector2(u1,v0));
             uv.Add(new Vector2(u1,v1)); uv.Add(new Vector2(u0,v1));
             // Front-facing toward the room (positive inward normal).
-            indices.Add(n); indices.Add(n+2); indices.Add(n+1);
-            indices.Add(n); indices.Add(n+3); indices.Add(n+2);
+            indices.Add(n); indices.Add(n+1); indices.Add(n+2);
+            indices.Add(n); indices.Add(n+2); indices.Add(n+3);
         }
         static void Emit(string name, List<Vector3> vertices, List<Vector2> uv,
             List<int> triangles, Material material, Action<GameObject> register)
