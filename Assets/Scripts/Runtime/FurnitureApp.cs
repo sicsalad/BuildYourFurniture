@@ -79,6 +79,9 @@ namespace BuildYourFurniture
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             var image = bg.AddComponent<Image>();
             ColorUtility.TryParseHtmlString(S(root,"background","#172332"),out var color); image.color = color;
+            var backgroundSprite = Resources.Load<Sprite>(S(root,"backgroundImage"));
+            if (backgroundSprite) { image.sprite = backgroundSprite; image.color = Color.white; image.type = Image.Type.Simple; image.preserveAspect = false; }
+            if (screen == "viewer") { image.color = Color.clear; image.raycastTarget = false; }
             foreach (var e in root.Elements())
             {
                 if (e.Name.LocalName == "label")
@@ -93,7 +96,7 @@ namespace BuildYourFurniture
                     var go = UIObject("Button",canvas.transform); Rect(go,e);
                     var img = go.AddComponent<Image>(); img.color = new Color(.15f,.35f,.49f,.95f);
                     var sprite = Resources.Load<Sprite>(S(e,"image"));
-                    if (sprite) { img.sprite = sprite; img.color = Color.white; }
+                    if (sprite) { img.sprite = sprite; img.color = Color.white; img.preserveAspect = false; }
                     var b = go.AddComponent<Button>();
                     var action = S(e,"action");
                     b.onClick.AddListener(()=>Action(action));
