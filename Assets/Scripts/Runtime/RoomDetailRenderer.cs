@@ -63,6 +63,40 @@ namespace BuildYourFurniture
                     int rows = Mathf.Clamp(Mathf.RoundToInt(N(finish, "rows", 5)), 0, 50);
                     if (tileWidth > 0f && tileHeight > 0f)
                     {
+                        // One continuous grout surface, split only at door/window openings.
+                        // Avoids thousands of tiny overlapping grout cubes and dark seams.
+                        if (groutWidth > 0f)
+                        {
+                            float finishTop = startHeight + rows * tileHeight;
+                            var horizontal = new List<float> { 0f, length };
+                            var vertical = new List<float> { startHeight, finishTop };
+                            foreach (var opening in openings)
+                            {
+                                horizontal.Add(Mathf.Clamp(N(opening, "offset") / 1000f, 0f, length));
+                                horizontal.Add(Mathf.Clamp((N(opening, "offset") + N(opening, "width")) / 1000f, 0f, length));
+                                vertical.Add(Mathf.Clamp(N(opening, "bottom") / 1000f, startHeight, finishTop));
+                                vertical.Add(Mathf.Clamp((N(opening, "bottom") + N(opening, "height")) / 1000f, startHeight, finishTop));
+                            }
+                            horizontal.Sort();
+                            vertical.Sort();
+                            for (int gx = 0; gx < horizontal.Count - 1; gx++)
+                            for (int gy = 0; gy < vertical.Count - 1; gy++)
+                            {
+                                float x0 = horizontal[gx], x1 = horizontal[gx + 1];
+                                float y0 = vertical[gy], y1 = vertical[gy + 1];
+                                if (x1 - x0 < .0001f || y1 - y0 < .0001f) continue;
+                                float mx = (x0 + x1) * .5f, my = (y0 + y1) * .5f;
+                                if (openings.Any(o =>
+                                    mx > N(o, "offset") / 1000f &&
+                                    mx < (N(o, "offset") + N(o, "width")) / 1000f &&
+                                    my > N(o, "bottom") / 1000f &&
+                                    my < (N(o, "bottom") + N(o, "height")) / 1000f)) continue;
+                                Vector2 gp = a + along * mx + normal * (wallThickness * .5f + tileDepth + .001f);
+                                cube("WallGrout_" + wallId + "_" + gx + "_" + gy,
+                                    new Vector3(gp.x, my, gp.y),
+                                    new Vector3(x1 - x0, y1 - y0, .001f), groutColor, angle);
+                            }
+                        }
                         // Every tile is clipped against wall openings. The backing is a thin,
                         // non-textured grout surface; the tile face is drawn 8 mm further in.
                         // These surfaces never share the same depth (prevents z-fighting).
@@ -114,12 +148,6 @@ namespace BuildYourFurniture
                                         string tileId = S(finish, "id", "TILE") + "_" + wallId + "_" + row + "_" + col + "_" + k + "_" + v;
                                         float cx = (sx0 + sx1) * .5f;
                                         float cy = (sy0 + sy1) * .5f;
-                                        if (groutWidth > 0f)
-                                        {
-                                            Vector2 backing = a + along * cx + normal * (wallThickness * .5f + .0015f);
-                                            cube("Grout_" + tileId, new Vector3(backing.x, cy, backing.y),
-                                                new Vector3(sx1 - sx0, sy1 - sy0, .001f), groutColor, angle);
-                                        }
                                         // Apply grout on all four sides. With groutWidth=0, faces
                                         // touch without a deliberate gap.
                                         float faceWidth = Mathf.Max(.0005f, sx1 - sx0 - groutWidth);
