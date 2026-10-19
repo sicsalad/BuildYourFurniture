@@ -5,6 +5,7 @@ using System.IO;
 using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace BuildYourFurniture
 {
@@ -30,11 +31,31 @@ namespace BuildYourFurniture
             var go = new GameObject("Generated UI Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvas = go.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            EnsureEventSystem();
             go.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             go.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
             var sample = Resources.Load<TextAsset>("Plans/sample");
             if (sample != null) LoadPlan(sample.text);
             Show("main");
+        }
+        void EnsureEventSystem()
+        {
+            if (EventSystem.current != null) return;
+            var eventObject = new GameObject("UI EventSystem", typeof(EventSystem));
+            // Use the new Input System module when installed; otherwise use legacy input.
+            var inputModuleType = Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+            if (inputModuleType != null) eventObject.AddComponent(inputModuleType);
+            else eventObject.AddComponent<StandaloneInputModule>();
+        }
+        static Sprite LoadUiSprite(string resource)
+        {
+            if (string.IsNullOrWhiteSpace(resource)) return null;
+            var sprite = Resources.Load<Sprite>(resource);
+            if (sprite != null) return sprite;
+            var texture = Resources.Load<Texture2D>(resource);
+            if (texture != null) return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(.5f,.5f));
+            Debug.LogWarning("Missing UI image: Assets/Resources/" + resource + ".png");
+            return null;
         }
         void Clear()
         {
@@ -79,9 +100,10 @@ namespace BuildYourFurniture
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             var image = bg.AddComponent<Image>();
             ColorUtility.TryParseHtmlString(S(root,"background","#172332"),out var color); image.color = color;
-            var backgroundSprite = Resources.Load<Sprite>(S(root,"backgroundImage"));
+            var backgroundSprite = LoadUiSprite(S(root,"backgroundImage"));
             if (backgroundSprite) { image.sprite = backgroundSprite; image.color = Color.white; image.type = Image.Type.Simple; image.preserveAspect = false; }
             if (screen == "viewer") { image.color = Color.clear; image.raycastTarget = false; }
+            else image.raycastTarget = false;
             foreach (var e in root.Elements())
             {
                 if (e.Name.LocalName == "label")
@@ -95,7 +117,7 @@ namespace BuildYourFurniture
                 {
                     var go = UIObject("Button",canvas.transform); Rect(go,e);
                     var img = go.AddComponent<Image>(); img.color = new Color(.15f,.35f,.49f,.95f);
-                    var sprite = Resources.Load<Sprite>(S(e,"image"));
+                    var sprite = LoadUiSprite(S(e,"image"));
                     if (sprite) { img.sprite = sprite; img.color = Color.white; img.preserveAspect = false; }
                     var b = go.AddComponent<Button>();
                     var action = S(e,"action");
@@ -105,7 +127,7 @@ namespace BuildYourFurniture
                     var lr = label.GetComponent<RectTransform>();
                     lr.anchorMin = Vector2.zero; lr.anchorMax = Vector2.one; lr.offsetMin = lr.offsetMax = Vector2.zero;
                     var t = label.GetComponent<Text>(); t.font=font; t.text=S(e,"text"); t.color=Color.white;
-                    t.fontSize=24; t.fontStyle=FontStyle.Bold; t.alignment=TextAnchor.MiddleCenter;
+                    t.fontSize=24; t.fontStyle=FontStyle.Bold; t.alignment=TextAnchor.MiddleCenter; t.raycastTarget = false;
                 }
             }
             if (screen == "viewer") BuildGeometry();
