@@ -1,1 +1,1 @@
-<screen id="viewer" background="#15202b"><label text="3D megjelenítés | WASD: mozgás, jobb egér: nézelődés, görgő: zoom" x="0" y="0.44" width="0.85" height="0.07" size="18"/><button text="Főképernyő" action="scene:main" x="-0.39" y="-0.42" width="0.18" height="0.08"/></screen>
+<screen id="viewer" background="#00000000"><label text="3D megjelenítés | WASD: mozgás, jobb egér: nézelődés, görgő: zoom" x="0" y="0.44" width="0.85" height="0.07" size="18"/><button text="Főképernyő" action="scene:main" x="-0.39" y="-0.42" width="0.18" height="0.08"/></screen>
