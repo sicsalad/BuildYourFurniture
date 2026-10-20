@@ -129,7 +129,7 @@ namespace BuildYourFurniture
                     float h=N(part.Item1,"height",N(model,"height",595))/1000f;
                     float scale=Mathf.Min(1f,Mathf.Min((width-.008f)/w,part.Item3/h));
                     w*=scale;h*=scale;
-                    float z=S(cabinet,"type")=="empty"?-N(part.Item1,"depth",N(model,"depth",510))/2000f-.003f:-depth*.5f-.023f;
+                    float z=-depth*.5f-.025f; // Outside the front braces and oven carcass, never hidden behind them.
                     float y=part.Item2+part.Item3*.5f;
                     var center=placements[id];
                     Quaternion rotation=Quaternion.Euler(0,angles[id],0);
