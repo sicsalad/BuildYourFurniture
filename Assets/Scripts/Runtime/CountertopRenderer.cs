@@ -72,6 +72,25 @@ namespace BuildYourFurniture
                       new Vector2((x1+fullW*.5f)/fullW,(z0+fullD*.5f)/fullD)},
                 new[]{0,1,2,0,2,3},mat,register);
         }
+        // A fixture photo must fill its own rectangle, not inherit the whole countertop UVs.
+        // textureRotation is clockwise in degrees when viewed from above.
+        static void FixturePhoto(string name,Func<float,float,float,Vector3> tr,
+            float x,float z,float width,float depth,float y,int rotation,Material mat,Action<GameObject> register)
+        {
+            int turns=((rotation%360)+360)%360/90;
+            if(rotation%90!=0)Debug.LogWarning(name+": textureRotation must be 0, 90, 180 or 270.");
+            var uv=new[]{new Vector2(0,0),new Vector2(0,1),new Vector2(1,1),new Vector2(1,0)};
+            for(int i=0;i<uv.Length;i++)
+            {
+                Vector2 v=uv[i]-new Vector2(.5f,.5f);
+                for(int t=0;t<turns;t++)v=new Vector2(v.y,-v.x);
+                uv[i]=v+new Vector2(.5f,.5f);
+            }
+            MeshObject(name,new[]{
+                tr(x-width*.5f,y,z-depth*.5f),tr(x-width*.5f,y,z+depth*.5f),
+                tr(x+width*.5f,y,z+depth*.5f),tr(x+width*.5f,y,z-depth*.5f)},
+                uv,new[]{0,1,2,0,2,3},mat,register);
+        }
         struct Opening {public float x0,x1,z0,z1;public XElement fixture;}
         public static void Build(XDocument plan,Action<GameObject> register,
             Action<string,Vector3,Vector3,Color,float> cube)
@@ -136,8 +155,8 @@ namespace BuildYourFurniture
                         if(hobTexture)
                         {
                             var hobMat=Material(Color.white,hobTexture,.25f);
-                            Quad(S(fixture,"id")+"_photo",tr,fx-fw*.5f,fz-fd*.5f,fx+fw*.5f,fz+fd*.5f,
-                                bottom+thickness+.025f,hobMat,w,d,register);
+                            FixturePhoto(S(fixture,"id")+"_photo",tr,fx,fz,fw,fd,
+                                bottom+thickness+.025f,(int)N(fixture,"textureRotation",0),hobMat,register);
                         }
                     }
                     else if(type=="sink")
