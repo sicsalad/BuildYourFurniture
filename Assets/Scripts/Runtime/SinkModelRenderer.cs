@@ -116,10 +116,11 @@ namespace BuildYourFurniture
             float width,float depth,float surface,Func<float,float,float,Vector3> transform,
             Action<GameObject> register)
         {
-            float basinDepth=N(model,"basinDepth",170)*.001f;
-            float largeRatio=N(model,"largeBowlRatio",.43f);
-            float smallRatio=N(model,"smallBowlRatio",.22f);
-            float drainerRatio=N(model,"drainerRatio",.25f);
+            float basinDepth=N(model,"largeBasinDepth",160)*.001f;
+            float smallBasinDepth=N(model,"smallBasinDepth",130)*.001f;
+            float largeRatio=N(model,"largeBowlRatio",.48f);
+            float smallRatio=N(model,"smallBowlRatio",.24f);
+            float drainerRatio=N(model,"drainerRatio",.28f);
             float margin=.018f;
             Color steel=C(S(fixture,"color",S(model,"color","#C3C7C9")),Color.gray);
             var metal=Mat(steel,N(model,"smoothness",.82f));
@@ -134,7 +135,7 @@ namespace BuildYourFurniture
             float sx=left+large+small*.5f;
             float dz=depth-.07f;
             Ring(id+"_largeBasin",lx,z,large-.012f,dz,surface,basinDepth,.065f,metal,tr,register);
-            Ring(id+"_smallBasin",sx,z,small-.012f,dz,surface,basinDepth*.82f,.050f,metal,tr,register);
+            Ring(id+"_smallBasin",sx,z,small-.012f,dz,surface,smallBasinDepth,.050f,metal,tr,register);
             Disk(id+"_largeDrain",lx,surface-basinDepth+.001f,z,.023f,dark,tr,register);
             Disk(id+"_smallDrain",sx,surface-basinDepth*.82f+.001f,z,.018f,dark,tr,register);
             float drainerStart=left+large+small+.012f;
