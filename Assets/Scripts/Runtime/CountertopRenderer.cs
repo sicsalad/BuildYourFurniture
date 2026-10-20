@@ -116,6 +116,8 @@ namespace BuildYourFurniture
                     float fd=M(N(fixture,"cutoutDepth",N(fixture,"depth",S(fixture,"type")=="sink"?480:490)));
                     float fx=M(N(fixture,"offsetX")),fz=M(N(fixture,"offsetY"));
                     if(fw<=0||fd<=0)continue;
+                    int fixtureRotation=((int)N(fixture,"rotation",0)%360+360)%360;
+                    if(fixtureRotation==90||fixtureRotation==270){float swap=fw;fw=fd;fd=swap;}
                     var opening=new Opening{x0=fx-fw*.5f,x1=fx+fw*.5f,z0=fz-fd*.5f,z1=fz+fd*.5f,fixture=fixture};
                     if(opening.x0< -w*.5f||opening.x1>w*.5f||opening.z0< -d*.5f||opening.z1>d*.5f)
                     {Debug.LogWarning("Fixture opening outside countertop: "+S(fixture,"id"));continue;}
@@ -169,8 +171,15 @@ namespace BuildYourFurniture
                             Debug.LogWarning("Sink model not found: "+modelId);
                             continue;
                         }
+                        float rotation=N(fixture,"rotation",0)*Mathf.Deg2Rad;
+                        Func<float,float,float,Vector3> sinkTransform=(lx,ly,lz)=>
+                        {
+                            float dx=lx-fx,dz=lz-fz;
+                            return tr(fx+Mathf.Cos(rotation)*dx+Mathf.Sin(rotation)*dz,
+                                ly,fz-Mathf.Sin(rotation)*dx+Mathf.Cos(rotation)*dz);
+                        };
                         SinkModelRenderer.Build(fixture,model,S(fixture,"id"),fx,fz,fw,fd,
-                            bottom+thickness+.006f,tr,register);
+                            bottom+thickness+.006f,sinkTransform,register);
                     }
                 }
             }
