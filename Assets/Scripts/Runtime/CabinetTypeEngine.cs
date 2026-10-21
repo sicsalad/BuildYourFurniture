@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using UnityEngine;
@@ -36,6 +37,8 @@ namespace BuildYourFurniture
         public static XDocument Load(string id)
         {
             if(string.IsNullOrEmpty(id)||id.IndexOfAny(new[]{'/','\\','.'})>=0)throw new ArgumentException("Invalid cabinet type id");
+            string editable=Path.Combine(Application.persistentDataPath,"XML","CabinetTypes",id+".xml");
+            if(File.Exists(editable))return XDocument.Load(editable);
             var asset=Resources.Load<TextAsset>("CabinetTypes/"+id);
             if(!asset)throw new InvalidOperationException("Missing cabinet type XML: "+id);
             return XDocument.Parse(asset.text);
