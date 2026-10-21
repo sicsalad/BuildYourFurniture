@@ -17,7 +17,7 @@ namespace BuildYourFurniture
         static string Escape(string value)=>"\""+(value??"").Replace("\"","\"\"")+"\"";
         public static string Csv(XDocument plan)
         {
-            var lines=new List<string>{"CabinetID;ElementID;MaterialID;Visibility;FinishedWidth_mm;FinishedHeight_mm;FinishedDepth_mm;CutWidth_mm;CutHeight_mm;CutDepth_mm;EdgeLeft_mm;EdgeRight_mm;EdgeTop_mm;EdgeBottom_mm;EdgeFront_mm;EdgeBack_mm;Quantity"};
+            var lines=new List<string>{"CabinetID;ElementID;MaterialID;Visibility;FinishedWidth_mm;FinishedHeight_mm;FinishedDepth_mm;CutWidth_mm;CutHeight_mm;CutDepth_mm;EdgeLeft_mm;EdgeRight_mm;EdgeTop_mm;EdgeBottom_mm;EdgeFront_mm;EdgeBack_mm;Quantity;RawPolygonXZ_mm"};
             var cabinets=plan.Root.Element("cabinetry")?.Elements("cabinet")??Enumerable.Empty<XElement>();
             foreach(var cabinet in cabinets)
             {
@@ -27,7 +27,7 @@ namespace BuildYourFurniture
                     var raw=CabinetTypeEngine.CutSize(part,new Dictionary<string,float>());
                     var fields=new[]{S(cabinet,"id"),S(part,"id"),S(part,"materialId"),S(part,"visibility","internal"),
                         S(part,"width"),S(part,"height"),S(part,"depth"),F(raw.x),F(raw.y),F(raw.z),
-                        S(part,"edgeLeft","0"),S(part,"edgeRight","0"),S(part,"edgeTop","0"),S(part,"edgeBottom","0"),S(part,"edgeFront","0"),S(part,"edgeBack","0"),"1"};
+                        S(part,"edgeLeft","0"),S(part,"edgeRight","0"),S(part,"edgeTop","0"),S(part,"edgeBottom","0"),S(part,"edgeFront","0"),S(part,"edgeBack","0"),"1",S(part,"kind")=="polygonPanel"?PolygonCutGeometry.RawOutline(part):""};
                     lines.Add(string.Join(";",fields.Select(Escape).ToArray()));
                 }
             }
@@ -78,6 +78,34 @@ namespace BuildYourFurniture
                         float left=N(cabinet,"leftLength",950),right=N(cabinet,"rightLength",950);
                         float ld=N(cabinet,"leftDepth",560),rd=N(cabinet,"rightDepth",590);
                         if(ld>=left||rd>=right)errors.Add(id+": corner wing depth must be less than wing length");
+                        var basePanel=parts.FirstOrDefault(e=>S(e,"id")=="BASE");
+                        if(basePanel==null)errors.Add(id+": missing L base");
+                        else
+                        {
+                            var outline=PolygonCutGeometry.Finished(basePanel);
+                            var rawOutline=PolygonCutGeometry.Raw(basePanel);
+                            if(outline.Count!=6||rawOutline.Count!=6)errors.Add(id+": L base must have six finished and raw vertices");
+                            float minX=outline.Min(p=>p.x),maxX=outline.Max(p=>p.x);
+                            float minZ=outline.Min(p=>p.y),maxZ=outline.Max(p=>p.y);
+                            if(Math.Abs(maxX-minX-left)>.01f||Math.Abs(maxZ-minZ-right)>.01f)
+                                errors.Add(id+": finished L footprint differs from requested outside dimensions");
+                            if(Math.Abs(N(basePanel,"height")-board)>.01f)errors.Add(id+": L base thickness differs from board thickness");
+                        }
+                        foreach(string sideId in new[]{"LEFT","RIGHT"})
+                        {
+                            var side=parts.FirstOrDefault(e=>S(e,"id")==sideId);
+                            if(side==null){errors.Add(id+": missing "+sideId);continue;}
+                            float bottom=N(side,"y")-N(side,"height")/2;
+                            if(Math.Abs(bottom-(plinth+board))>.01f)errors.Add(id+"/"+sideId+": bottom not seated on L base");
+                            float top=N(side,"y")+N(side,"height")/2;
+                            if(Math.Abs(top-height)>.01f)errors.Add(id+"/"+sideId+": top not flush with cabinet top");
+                        }
+                        foreach(var part in parts.Where(e=>S(e,"id")!="BASE"))
+                        {
+                            float x=N(part,"x"),z=N(part,"z"),w=N(part,"width"),d=N(part,"depth");
+                            if(x-w/2<-.01f||x+w/2>left+.01f||z-d/2<-.01f||z+d/2>right+.01f)
+                                errors.Add(id+"/"+S(part,"id")+": extends outside finished cabinet envelope");
+                        }
                     }
                 }
                 catch(Exception ex){errors.Add(id+": "+ex.Message);}
