@@ -30,6 +30,112 @@ namespace BuildYourFurniture
         string status = "";
         readonly XmlDesignEditor xmlEditor = new XmlDesignEditor();
         Texture2D tileTexture;
+        bool cabinetVisibilityOpen;
+        Vector2 cabinetVisibilityScroll;
+        readonly Dictionary<string,bool> cabinetVisibility=new Dictionary<string,bool>();
+        string VisibilityPath=>Path.Combine(Application.persistentDataPath,"XML","Plans","sample.xml");
+        void ReadCabinetVisibility()
+        {
+            cabinetVisibility.Clear();
+            var cabinetry=plan?.Root?.Element("cabinetry");
+            if(cabinetry==null)return;
+            var settings=cabinetry.Element("visibility");
+            foreach(var cabinet in cabinetry.Elements("cabinet"))
+            {
+                string id=S(cabinet,"id");
+                if(string.IsNullOrEmpty(id))continue;
+                var entry=settings?.Elements("cabinet").FirstOrDefault(x=>S(x,"id")==id);
+                cabinetVisibility[id]=entry==null||S(entry,"visible","true")!="false";
+            }
+        }
+        void SaveCabinetVisibility()
+        {
+            if(plan?.Root==null)return;
+            var cabinetry=plan.Root.Element("cabinetry");
+            if(cabinetry==null)return;
+            var settings=cabinetry.Element("visibility");
+            if(settings==null){settings=new XElement("visibility");cabinetry.AddFirst(settings);}
+            settings.RemoveNodes();
+            foreach(var cabinet in cabinetry.Elements("cabinet"))
+            {
+                string id=S(cabinet,"id");
+                bool visible;
+                if(!cabinetVisibility.TryGetValue(id,out visible))visible=true;
+                settings.Add(new XElement("cabinet",new XAttribute("id",id),
+                    new XAttribute("visible",visible?"true":"false")));
+            }
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Szekrények láthatósága mentve a minta.xml-be.";
+            }
+            catch(Exception ex){status="Láthatóság mentési hiba: "+ex.Message;Debug.LogException(ex);}
+        }
+        XDocument VisibleCabinetPlan()
+        {
+            var copy=new XDocument(plan);
+            var cabinetry=copy.Root?.Element("cabinetry");
+            if(cabinetry==null)return copy;
+            foreach(var cabinet in cabinetry.Elements("cabinet").ToList())
+            {
+                bool visible;
+                if(cabinetVisibility.TryGetValue(S(cabinet,"id"),out visible)&&!visible)
+                    cabinet.Remove();
+            }
+            // All rendering paths receive the same filtered plan, including appliance fronts.
+            return copy;
+        }
+        void RefreshViewerGeometry()
+        {
+            if(current!="viewer")return;
+            foreach(var g in geometry)if(g)Destroy(g);
+            geometry.Clear();
+            if(worldCamera)Destroy(worldCamera.gameObject);
+            worldCamera=null;
+            BuildGeometry();
+        }
+        void DrawCabinetVisibilityMenu()
+        {
+            float barHeight=Screen.height*.10f;
+            GUI.Box(new Rect(0,0,Screen.width,barHeight),"");
+            float buttonWidth=Mathf.Min(260,Screen.width*.28f);
+            if(GUI.Button(new Rect(14,8,buttonWidth,Mathf.Max(30,barHeight-16)),
+                cabinetVisibilityOpen?"Szekrények ▲":"Szekrények ▼"))
+                cabinetVisibilityOpen=!cabinetVisibilityOpen;
+            if(!cabinetVisibilityOpen)return;
+            var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
+            if(cabinets==null)return;
+            float itemHeight=35f;
+            float panelHeight=Mathf.Min(Screen.height*.65f,cabinets.Count*itemHeight+22);
+            var panel=new Rect(14,barHeight,Mathf.Max(290,buttonWidth),panelHeight);
+            GUI.Box(panel,"");
+            GUILayout.BeginArea(new Rect(panel.x+8,panel.y+8,panel.width-16,panel.height-16));
+            cabinetVisibilityScroll=GUILayout.BeginScrollView(cabinetVisibilityScroll);
+            foreach(var cabinet in cabinets)
+            {
+                string id=S(cabinet,"id");
+                bool currentValue;
+                if(!cabinetVisibility.TryGetValue(id,out currentValue))currentValue=true;
+                bool next=GUILayout.Toggle(currentValue,id+" – "+S(cabinet,"name"),GUILayout.Height(itemHeight));
+                if(next!=currentValue)
+                {
+                    cabinetVisibility[id]=next;
+                    SaveCabinetVisibility();
+                    RefreshViewerGeometry();
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
         static float N(XElement e, string key, float fallback = 0) => float.TryParse((string)e.Attribute(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
         static string S(XElement e, string key, string fallback = "") => (string)e.Attribute(key) ?? fallback;
 
@@ -140,7 +246,7 @@ namespace BuildYourFurniture
                     t.fontSize=24; t.fontStyle=FontStyle.Bold; t.alignment=TextAnchor.MiddleCenter; t.raycastTarget = false;
                 }
             }
-            if (screen == "viewer") BuildGeometry();
+            if (screen == "viewer") { cabinetVisibilityOpen=false; BuildGeometry(); }
         }
         void Action(string action)
         {
@@ -155,6 +261,7 @@ namespace BuildYourFurniture
             if (candidate.Root.Element("rooms") == null || candidate.Root.Element("walls") == null) throw new InvalidDataException("Missing rooms or walls");
             CabinetPlacementEngine.Resolve(candidate);
             plan = candidate;
+            ReadCabinetVisibility();
             if (current == "viewer" || current == "main" || current == "materials") Show(current);
         }
         void OpenPlanDialog()
@@ -340,16 +447,17 @@ namespace BuildYourFurniture
                 var min=pts[0]; var max=pts[0]; foreach(var p in pts){ min=Vector2.Min(min,p);max=Vector2.Max(max,p); }
                 Cube("Floor",new Vector3((min.x+max.x)/2,-.05f,(min.y+max.y)/2),new Vector3(max.x-min.x,.1f,max.y-min.y),Color.gray);
             }
-            FloorTileRenderer.Build(plan, element => geometry.Add(element));
-            WallTileMeshRenderer.Build(plan, element => geometry.Add(element));
-            ApplianceTextureRenderer.Build(plan, element => geometry.Add(element));
-            ApplianceTextureRenderer.BuildCabinetFronts(plan, element => geometry.Add(element));
-            CountertopRenderer.Build(plan, element => geometry.Add(element), (name, position, size, color, rotation) =>
+            var renderPlan=VisibleCabinetPlan();
+            FloorTileRenderer.Build(renderPlan, element => geometry.Add(element));
+            WallTileMeshRenderer.Build(renderPlan, element => geometry.Add(element));
+            ApplianceTextureRenderer.Build(renderPlan, element => geometry.Add(element));
+            ApplianceTextureRenderer.BuildCabinetFronts(renderPlan, element => geometry.Add(element));
+            CountertopRenderer.Build(renderPlan, element => geometry.Add(element), (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
                 element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
             });
-            PlanGeometryRenderer.Build(plan, (name, position, size, color, rotation) =>
+            PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
                 element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
@@ -426,6 +534,6 @@ namespace BuildYourFurniture
             else status="Export: "+path;
             Debug.Log(status);
         }
-        void OnGUI() { if(current=="editor") xmlEditor.Draw(); if(!string.IsNullOrEmpty(status)) GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status); }
+        void OnGUI() { if(current=="viewer") DrawCabinetVisibilityMenu(); if(current=="editor") xmlEditor.Draw(); if(!string.IsNullOrEmpty(status)) GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status); }
     }
 }
