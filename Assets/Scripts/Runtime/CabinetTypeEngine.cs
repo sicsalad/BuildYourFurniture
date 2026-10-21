@@ -86,7 +86,7 @@ namespace BuildYourFurniture
                     values[attribute.Name.LocalName]=Num(attribute.Value,values[attribute.Name.LocalName]);
             return values;
         }
-        public static void Build(XElement cabinet,XElement defaults,Action<string,Vector3,Vector3,Color,float> cube)
+        public static void Build(XElement cabinet,XElement defaults,Action<string,Vector3,Vector3,Color,float> cube, Action<GameObject> register=null)
         {
             string typeId=S(cabinet,"typeId",S(cabinet,"type","normal"));
             var type=EffectiveType(typeId);
@@ -115,7 +115,18 @@ namespace BuildYourFurniture
                 Vector3 position=new Vector3(ox+Mathf.Cos(rad)*x+Mathf.Sin(rad)*z,y,oz-Mathf.Sin(rad)*x+Mathf.Cos(rad)*z);
                 Vector3 size=new Vector3(v("width"),v("height"),v("depth"));
                 if(size.x<=0||size.y<=0||size.z<=0)throw new InvalidOperationException("Invalid element "+id+" in "+S(cabinet,"id"));
-                cube(S(cabinet,"id")+"_"+id,position,size,color,angle);
+                if(S(part,"kind")=="lShapePanel")
+                {
+                    if(register==null)throw new InvalidOperationException("L-shaped panel needs mesh registration");
+                    float left=Evaluate(S(change,"width",S(part,"width")),vars)*.001f;
+                    float right=Evaluate(S(change,"depth",S(part,"depth")),vars)*.001f;
+                    float ld=Evaluate(S(change,"leftDepth",S(part,"leftDepth")),vars)*.001f;
+                    float rd=Evaluate(S(change,"rightDepth",S(part,"rightDepth")),vars)*.001f;
+                    var mesh=LShapePanelMesh.Create(S(cabinet,"id")+"_"+id,left,right,ld,rd,size.y,
+                        new Vector3(ox,y,oz),angle,color);
+                    register(mesh);
+                }
+                else cube(S(cabinet,"id")+"_"+id,position,size,color,angle);
             }
             if(typeId=="corner")BuildCornerDrawer(cabinet,cube);
         }
