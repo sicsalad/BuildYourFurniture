@@ -49,12 +49,20 @@ namespace BuildYourFurniture
                 float innerX=dimension(corner,"leftLength")-dimension(corner,"leftDepth");
                 float innerZ=dimension(corner,"rightLength")-dimension(corner,"rightDepth");
                 check(cornerParts.ContainsKey("BASE")&&cornerParts["BASE"].Element("outline")!=null,"polygonal L base");
-                check(Math.Abs(dimension(cornerParts["R1"],"x")-(innerX+50))<.01f,"R1 at inner corner");
+                check(Math.Abs(dimension(cornerParts["R1"],"x")-innerX)<.01f,"R1 at inner corner");
                 check(Math.Abs(dimension(cornerParts["R2"],"z")-(innerZ+50))<.01f,"R2 at inner corner");
                 check(Math.Abs(dimension(cornerParts["LEFT"],"x")-
                     (dimension(corner,"leftLength")-dimension(corner,"boardThickness")/2))<.01f,"left end panel");
                 check(Math.Abs(dimension(cornerParts["RIGHT"],"z")-
                     (dimension(corner,"rightLength")-dimension(corner,"boardThickness")/2))<.01f,"right end panel");
+                var finished=PolygonCutGeometry.Finished(cornerParts["BASE"]);
+                var cut=PolygonCutGeometry.Raw(cornerParts["BASE"]);
+                check(finished.Count==6&&cut.Count==6,"six-sided banded L polygon");
+                check(Math.Abs(finished.Max(p=>p.x)-finished.Min(p=>p.x)-950)<.01f,"950 mm finished left arm");
+                check(Math.Abs(finished.Max(p=>p.y)-finished.Min(p=>p.y)-950)<.01f,"950 mm finished right arm");
+                check(Math.Abs(dimension(cornerParts["LEFT"],"y")+
+                    dimension(cornerParts["LEFT"],"height")/2-860)<.01f,"finished 860 mm cabinet height");
+                check(Math.Abs(dimension(cornerParts["S2"],"depth")-372)<.01f,"S2 finished 372 mm");
                 string csv=CabinetManufacturing.Csv(plan);
                 check(csv.Contains("F02")&&csv.Contains("CutWidth_mm"),"cut-list content");
                 var issues=CabinetManufacturing.Validate(plan);
