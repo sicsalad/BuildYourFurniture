@@ -22,13 +22,15 @@
     <defaults bodyColor="#20385B" frontColor="#20385B" plinthColor="#A8A9AA" handleColor="#101114" boardThickness="18" backThickness="6" edgeBandThickness="2" braceWidth="100" drawerGap="2" handleWidth="120" handleDiameter="10" frontFinish="mattePainted" frontCornerRadius="2" />
     <!-- Cabinet local -Z is front; rotation=90 faces the entrance side of W02. -->
     <cabinet id="F01" name="Mosogep helye" type="empty" typeRef="empty" kind="base" width="700" height="860" depth="560" plinth="0" x="2380" y="350" rotation="90">
+      <position mode="plan" roomId="R01"><plan x="2380" y="350"/><room x="2380" y="350"/></position>
+      <orientation mode="rotation" rotation="90"/>
       <edges left="front,top,back,bottom" right="front,top,back,bottom" />
       <appliance modelId="M03" width="595" height="845" depth="510" color="#303034" frontTexture="Textures/mosogep" />
     </cabinet>
-    <cabinet id="F02" name="Suto szekreny" type="normal" typeRef="normal" kind="base" width="600" height="860" depth="560" plinth="80" alignTo="F01" side="left">
+    <cabinet id="F02" name="Suto szekreny" type="normal" typeRef="normal" kind="base" width="600" height="860" depth="560" plinth="80" alignTo="F01" side="left"><docking active="true" cabinetId="F01" element="CABINET" face="right" targetElement="CABINET" targetFace="left"/>
       <sections><section type="drawer" height="180" /><section type="oven" height="600" modelId="M04" frontTexture="Textures/suto" /></sections>
     </cabinet>
-    <cabinet id="F03" name="Haromfiokos 35" type="normal" typeRef="normal" kind="base" width="350" height="860" depth="560" plinth="80" alignTo="F02" side="left">
+    <cabinet id="F03" name="Haromfiokos 35" type="normal" typeRef="normal" kind="base" width="350" height="860" depth="560" plinth="80" alignTo="F02" side="left"><docking active="true" cabinetId="F02" element="CABINET" face="right" targetElement="CABINET" targetFace="left"/>
       <sections><section type="drawer" height="380" /><section type="drawer" height="250" /><section type="drawer" height="150" /></sections>
     </cabinet>
     <!-- F04 replaces both former F04 and F05. Finished dimensions; plinth included in height. -->
