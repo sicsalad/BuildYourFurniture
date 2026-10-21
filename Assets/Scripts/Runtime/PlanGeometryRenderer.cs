@@ -28,7 +28,7 @@ namespace BuildYourFurniture
         }
         static bool Inside(float x, float a, float b) => x >= a - 0.00001f && x <= b + 0.00001f;
 
-        public static void Build(XDocument plan, Action<string, Vector3, Vector3, Color, float> cube)
+        public static void Build(XDocument plan, Action<string, Vector3, Vector3, Color, float> cube, Action<GameObject> register=null)
         {
             if (plan == null || plan.Root == null) return;
             XElement root = plan.Root;
@@ -89,7 +89,7 @@ namespace BuildYourFurniture
             }
             RoomDetailRenderer.Build(plan, cube);
             FurnitureModelRenderer.Build(plan, cube);
-            CabinetRenderer.Build(plan, cube);
+            CabinetRenderer.Build(plan, cube, register);
         }
     }
 }
