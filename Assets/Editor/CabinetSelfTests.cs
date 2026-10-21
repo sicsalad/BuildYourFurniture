@@ -42,6 +42,19 @@ namespace BuildYourFurniture
                 float sideBottom=float.Parse((string)left.Attribute("y"),System.Globalization.CultureInfo.InvariantCulture)-
                     float.Parse((string)left.Attribute("height"),System.Globalization.CultureInfo.InvariantCulture)/2;
                 check(Math.Abs(baseTop-sideBottom)<.01f,"side rests on base");
+                var corner=cabinets.First(e=>(string)e.Attribute("id")=="F04");
+                var cornerParts=CabinetTypeEngine.Parts(corner).ToDictionary(e=>(string)e.Attribute("id"));
+                Func<XElement,string,float> dimension=(e,key)=>float.Parse((string)e.Attribute(key),
+                    System.Globalization.CultureInfo.InvariantCulture);
+                float innerX=dimension(corner,"leftLength")-dimension(corner,"leftDepth");
+                float innerZ=dimension(corner,"rightLength")-dimension(corner,"rightDepth");
+                check(cornerParts.ContainsKey("BASE")&&cornerParts["BASE"].Element("outline")!=null,"polygonal L base");
+                check(Math.Abs(dimension(cornerParts["R1"],"x")-(innerX+50))<.01f,"R1 at inner corner");
+                check(Math.Abs(dimension(cornerParts["R2"],"z")-(innerZ+50))<.01f,"R2 at inner corner");
+                check(Math.Abs(dimension(cornerParts["LEFT"],"x")-
+                    (dimension(corner,"leftLength")-dimension(corner,"boardThickness")/2))<.01f,"left end panel");
+                check(Math.Abs(dimension(cornerParts["RIGHT"],"z")-
+                    (dimension(corner,"rightLength")-dimension(corner,"boardThickness")/2))<.01f,"right end panel");
                 string csv=CabinetManufacturing.Csv(plan);
                 check(csv.Contains("F02")&&csv.Contains("CutWidth_mm"),"cut-list content");
                 var issues=CabinetManufacturing.Validate(plan);
