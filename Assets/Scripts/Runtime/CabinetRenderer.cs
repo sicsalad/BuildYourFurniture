@@ -25,7 +25,7 @@ namespace BuildYourFurniture
         }
         static float M(float mm)=>mm*.001f;
 
-        public static void Build(XDocument plan,Action<string,Vector3,Vector3,Color,float> cube)
+        public static void Build(XDocument plan,Action<string,Vector3,Vector3,Color,float> cube,Action<GameObject> register=null)
         {
             if(plan?.Root==null)return;
             CabinetPlacementEngine.Resolve(plan);
@@ -55,7 +55,7 @@ namespace BuildYourFurniture
             foreach(var e in cabinets)
             {
                 string id=S(e,"id");
-                if(!string.IsNullOrEmpty(S(e,"typeId"))){CabinetTypeEngine.Build(e,defaults,cube);continue;}
+                if(!string.IsNullOrEmpty(S(e,"typeId"))){CabinetTypeEngine.Build(e,defaults,cube,register);continue;}
                 if(S(e,"type")=="corner"){CornerCabinetRenderer.Build(e,defaults,cube);continue;}
                 Vector2 origin=placement[id];
                 float angle=angles[id], rad=angle*Mathf.Deg2Rad;
