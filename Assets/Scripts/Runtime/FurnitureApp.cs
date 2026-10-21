@@ -43,7 +43,9 @@ namespace BuildYourFurniture
             go.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             go.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
             var sample = Resources.Load<TextAsset>("Plans/sample");
-            if (sample != null) LoadPlan(sample.text);
+            var editedSample = Path.Combine(Application.persistentDataPath,"XML","Plans","sample.xml");
+            if(File.Exists(editedSample)) LoadPlan(File.ReadAllText(editedSample));
+            else if (sample != null) LoadPlan(sample.text);
             Show("main");
         }
         void EnsureEventSystem()
@@ -151,6 +153,7 @@ namespace BuildYourFurniture
             var candidate = XDocument.Parse(xml);
             if (candidate.Root == null || candidate.Root.Name != "plan") throw new InvalidDataException("Invalid plan root");
             if (candidate.Root.Element("rooms") == null || candidate.Root.Element("walls") == null) throw new InvalidDataException("Missing rooms or walls");
+            CabinetPlacementEngine.Resolve(candidate);
             plan = candidate;
             if (current == "viewer" || current == "main" || current == "materials") Show(current);
         }
