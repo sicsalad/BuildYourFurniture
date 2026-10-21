@@ -72,6 +72,12 @@ namespace BuildYourFurniture
                 var target=parent.Element("elements").Elements("element").FirstOrDefault(e=>S(e,"id")==S(change,"id"));
                 if(target==null)throw new InvalidOperationException("Unknown inherited element "+S(change,"id"));
                 foreach(var attribute in change.Attributes())target.SetAttributeValue(attribute.Name,attribute.Value);
+                foreach(var node in change.Elements())
+                {
+                    var old=target.Element(node.Name);
+                    if(old!=null)old.ReplaceWith(new XElement(node));
+                    else target.Add(new XElement(node));
+                }
             }
             parent.SetAttributeValue("id",id);
             visiting.Remove(id);return parent;
