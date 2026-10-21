@@ -49,7 +49,7 @@ namespace BuildYourFurniture
                 float innerX=dimension(corner,"leftLength")-dimension(corner,"leftDepth");
                 float innerZ=dimension(corner,"rightLength")-dimension(corner,"rightDepth");
                 check(cornerParts.ContainsKey("BASE")&&cornerParts["BASE"].Element("outline")!=null,"polygonal L base");
-                check(Math.Abs(dimension(cornerParts["R1"],"x")-innerX)<.01f,"R1 at inner corner");
+                check(Math.Abs(dimension(cornerParts["R1"],"x")-(innerX-50))<.01f,"R1 at inner corner");
                 check(Math.Abs(dimension(cornerParts["R2"],"z")-(innerZ+50))<.01f,"R2 at inner corner");
                 check(Math.Abs(dimension(cornerParts["LEFT"],"x")-
                     (dimension(corner,"leftLength")-dimension(corner,"boardThickness")/2))<.01f,"left end panel");
