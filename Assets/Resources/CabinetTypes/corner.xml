@@ -51,7 +51,7 @@
     <element id="RIGHT" kind="panel" materialId="body" visibility="external"
              width="$rightDepth" height="$height-$plinth-$boardThickness" depth="$boardThickness"
              edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness" edgeTop="$edgeBandThickness">
-      <placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$rightDepth/2" z="$rightLength-$boardThickness/2"/></placement>
+      <placement><attach my="Bottom" to="BASE.Top" x="$rightDepth/2" z="$rightLength-$boardThickness/2"/></placement>
     </element>
     <!-- R2 begins at inner corner and runs towards the right arm; R1 abuts R2 along left arm. -->
     <element id="R2" kind="panel" materialId="body" visibility="internal"
