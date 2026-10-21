@@ -43,6 +43,8 @@ namespace BuildYourFurniture
                     Names[selected].StartsWith("CabinetTypes/")?"cabinetType":"screen";
                 if(xml.Root==null||xml.Root.Name.LocalName!=root)
                     throw new InvalidDataException("Várt gyökérelem: "+root);
+                if(root=="plan") CabinetPlacementEngine.Resolve(xml);
+                content=xml.ToString();
                 string path=PathFor(Names[selected]);
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllText(path,content,System.Text.Encoding.UTF8);
@@ -65,7 +67,7 @@ namespace BuildYourFurniture
                 try{XDocument.Parse(content);message="Az XML szintaktikailag érvényes.";}
                 catch(Exception ex){message=ex.Message;}
             }
-            if(GUILayout.Button("Mentés",GUILayout.Width(110)))Save();
+            if(GUILayout.Button("Mentés + pozíciószámítás",GUILayout.Width(230)))Save();
             GUILayout.Label(message);
             GUILayout.EndHorizontal();
             scroll=GUILayout.BeginScrollView(scroll);
