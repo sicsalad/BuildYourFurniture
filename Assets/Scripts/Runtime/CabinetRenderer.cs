@@ -79,11 +79,15 @@ namespace BuildYourFurniture
                 Action<string,float,float,float,float,float,float,Color> box=(name,x,y,z,sx,sy,sz,color)=>
                     cube(id+"_"+name,position(x,y,z),new Vector3(sx,sy,sz),color,angle);
                 // Side panels stand on the base for normal cabinets; empty machine bays have no base.
+                bool xmlStructure=!string.IsNullOrEmpty(S(e,"typeRef"));
+                if(xmlStructure)CabinetTypeEngine.Build(e,defaults,cube);
                 bool empty=S(e,"type")=="empty";
                 float sideStart=plinth+(empty?0:t);
                 float sideHeight=bodyHeight-(empty?0:t);
+                if(!xmlStructure)
+                {
                 box("leftSide", -w*.5f+t*.5f,sideStart+sideHeight*.5f,0,t,sideHeight,d,body);
-                box("rightSide",w*.5f-t*.5f,plinth+t+(bodyHeight-t)*.5f,0,t,bodyHeight-t,d,body);
+                box("rightSide",w*.5f-t*.5f,sideStart+sideHeight*.5f,0,t,sideHeight,d,body);
                 box("backboard",0,plinth+bodyHeight*.5f,d*.5f-back*.5f,w-2*t,bodyHeight,back,ColorOf(S(e,"backColor","#B5AB98"),body));
                 if(!empty)
                     box("bottomPanel",0,plinth+t*.5f,0,w,t,d-back,body);
@@ -92,6 +96,7 @@ namespace BuildYourFurniture
                 box("rearTopBrace",0,h-t*.5f,d*.5f-brace*.5f,w-2*t,t,brace,body);
                 if(plinth>0)
                     box("plinth",0,plinth*.5f,-d*.5f+.015f,w,plinth,.018f,plinthColor);
+                }
                 var sections=e.Element("sections")?.Elements("section").ToList()??new List<XElement>();
                 float sectionBottom=plinth;
                 for(int i=0;i<sections.Count;i++)
@@ -117,8 +122,8 @@ namespace BuildYourFurniture
                     else if(type=="oven")
                     {
                         // Two full-depth horizontal shelves replace cross braces above/below an oven.
-                        box("ovenLowerShelf"+i,0,sectionBottom+t*.5f,0,w-2*t,t,d-back,body);
-                        box("ovenUpperShelf"+i,0,top-t*.5f,0,w-2*t,t,d-back,body);
+                        if(!xmlStructure)box("ovenLowerShelf"+i,0,sectionBottom+t*.5f,0,w-2*t,t,d-back,body);
+                        if(!xmlStructure)box("ovenUpperShelf"+i,0,top-t*.5f,0,w-2*t,t,d-back,body);
                         box("ovenBody"+i,0,sectionBottom+sectionHeight*.5f,0,w-2*t,Mathf.Max(.01f,sectionHeight-2*t),d-back,
                             ColorOf(S(part,"color","#151515"),Color.black));
                     }
@@ -127,7 +132,7 @@ namespace BuildYourFurniture
                         box("applianceBody"+i,0,sectionBottom+sectionHeight*.5f,0,w-.012f,sectionHeight,d-.02f,
                             ColorOf(S(part,"color","#474747"),Color.gray));
                     }
-                    if(i<sections.Count-1 && type!="oven" && S(sections[i+1],"type")!="oven")
+                    if(!xmlStructure && i<sections.Count-1 && type!="oven" && S(sections[i+1],"type")!="oven")
                         box("sectionBrace"+i,0,top-t*.5f,-d*.5f+brace*.5f,w-2*t,t,brace,body);
                     sectionBottom=top;
                 }
