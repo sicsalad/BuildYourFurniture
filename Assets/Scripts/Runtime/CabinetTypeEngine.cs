@@ -177,6 +177,13 @@ namespace BuildYourFurniture
                 if(S(element,"enabledWhen")=="plinth>0"&&variables["plinth"]<=0)continue;
                 var copy=new XElement(element);
                 if(change!=null)foreach(var a in change.Attributes())copy.SetAttributeValue(a.Name,a.Value);
+                foreach(var band in copy.Element("edgeBands")?.Elements("edge")??Enumerable.Empty<XElement>())
+                    band.SetAttributeValue("thickness",Evaluate(S(band,"thickness","0"),variables).ToString("0.###",CultureInfo.InvariantCulture));
+                foreach(var point in copy.Element("outline")?.Elements("point")??Enumerable.Empty<XElement>())
+                {
+                    point.SetAttributeValue("x",Evaluate(S(point,"x"),variables).ToString("0.###",CultureInfo.InvariantCulture));
+                    point.SetAttributeValue("z",Evaluate(S(point,"z"),variables).ToString("0.###",CultureInfo.InvariantCulture));
+                }
                 foreach(var key in new[]{"width","height","depth","x","y","z"})
                     copy.SetAttributeValue(key,Evaluate(S(copy,key,"0"),variables).ToString("0.###",CultureInfo.InvariantCulture));
                 Vector3 center=centers[S(copy,"id")];
