@@ -353,7 +353,7 @@ namespace BuildYourFurniture
             {
                 var element = Cube(name, position, size, color);
                 element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
-            });
+            }, element => geometry.Add(element));
         }
         GameObject Cube(string name,Vector3 pos,Vector3 scale,Color color)
         {
