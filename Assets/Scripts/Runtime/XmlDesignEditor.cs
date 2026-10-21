@@ -43,7 +43,12 @@ namespace BuildYourFurniture
                     Names[selected].StartsWith("CabinetTypes/")?"cabinetType":"screen";
                 if(xml.Root==null||xml.Root.Name.LocalName!=root)
                     throw new InvalidDataException("Várt gyökérelem: "+root);
-                if(root=="plan") CabinetPlacementEngine.Resolve(xml);
+                if(root=="plan")
+                {
+                    CabinetPlacementEngine.Resolve(xml);
+                    var issues=CabinetManufacturing.Validate(xml);
+                    if(issues.Count>0)message="Geometriai figyelmeztetések: "+string.Join(" | ",issues.ToArray());
+                }
                 content=xml.ToString();
                 string path=PathFor(Names[selected]);
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -66,6 +71,11 @@ namespace BuildYourFurniture
             {
                 try{XDocument.Parse(content);message="Az XML szintaktikailag érvényes.";}
                 catch(Exception ex){message=ex.Message;}
+            }
+            if(GUILayout.Button("Geometria ellenőrzés",GUILayout.Width(180)))
+            {
+                try{var xml=XDocument.Parse(content);var issues=CabinetManufacturing.Validate(xml);message=issues.Count==0?"Geometria rendben.":string.Join(" | ",issues.ToArray());}
+                catch(Exception ex){message="Hiba: "+ex.Message;}
             }
             if(GUILayout.Button("Mentés + pozíciószámítás",GUILayout.Width(230)))Save();
             GUILayout.Label(message);
