@@ -56,29 +56,29 @@
     <!-- R2 begins at inner corner and runs towards the right arm; R1 abuts R2 along left arm. -->
     <element id="R2" kind="panel" materialId="body" visibility="internal"
              width="$boardThickness" height="$height-$plinth-$boardThickness-$braceWidth" depth="$braceWidth"
-             edgeTop="$edgeBandThickness" edgeBack="$edgeBandThickness">
+             edgeFront="$edgeBandThickness" edgeBack="$edgeBandThickness">
       <placement><attach my="Bottom" to="BASE.InnerCorner" x="$boardThickness/2" z="$braceWidth/2"/></placement>
     </element>
     <element id="R1" kind="panel" materialId="body" visibility="internal"
              width="$braceWidth" height="$height-$plinth-$boardThickness-$braceWidth" depth="$boardThickness"
-             edgeTop="$edgeBandThickness">
+             edgeLeft="$edgeBandThickness">
       <placement><attach my="Bottom" to="R2.Left" x="-$braceWidth/2" z="-$braceWidth/2+$boardThickness/2"/></placement>
     </element>
     <!-- K1/K2 upright (vertical plane), their top is flush with cabinet top. -->
     <element id="K1" kind="panel" materialId="body" visibility="internal"
              width="$leftLength-$boardThickness-$edgeBandThickness" height="$braceWidth" depth="$boardThickness"
-             edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness" edgeTop="$edgeBandThickness">
+             edgeTop="$edgeBandThickness" edgeBottom="$edgeBandThickness" edgeLeft="$edgeBandThickness">
       <placement><attach my="Top" to="BASE.Top" x="$leftLength-$boardThickness-($leftLength-$boardThickness-$edgeBandThickness)/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+1.5*$boardThickness"/></placement>
     </element>
     <element id="K2" kind="panel" materialId="body" visibility="internal"
              width="$boardThickness" height="$braceWidth" depth="$rightLength-2*$boardThickness"
-             edgeFront="$edgeBandThickness" edgeBack="$edgeBandThickness">
+             edgeTop="$edgeBandThickness" edgeBottom="$edgeBandThickness">
       <placement><attach my="Top" to="BASE.Top" x="$leftLength-$leftDepth+$boardThickness/2" y="$height-$plinth-$boardThickness" z="$rightLength-$boardThickness-($rightLength-2*$boardThickness)/2"/></placement>
     </element>
     <!-- S1/S2 are horizontal panels. Their TOP is flush with cabinet top. -->
     <element id="S1" kind="panel" materialId="body" visibility="internal"
              width="$leftLength-2*$boardThickness" height="$boardThickness" depth="$braceWidth"
-             edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness">
+             edgeFront="$edgeBandThickness" edgeBack="$edgeBandThickness">
       <placement><attach my="Top" to="BASE.Top" x="$leftLength/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+1.5*$braceWidth"/></placement>
     </element>
     <element id="S2" kind="panel" materialId="body" visibility="internal"
