@@ -28,6 +28,7 @@ namespace BuildYourFurniture
         Vector3 cameraHome;
         Quaternion cameraHomeRotation;
         string status = "";
+        readonly XmlDesignEditor xmlEditor = new XmlDesignEditor();
         Texture2D tileTexture;
         static float N(XElement e, string key, float fallback = 0) => float.TryParse((string)e.Attribute(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
         static string S(XElement e, string key, string fallback = "") => (string)e.Attribute(key) ?? fallback;
@@ -413,6 +414,6 @@ namespace BuildYourFurniture
             File.WriteAllText(path,"\uFEFF"+MaterialsCsv(),System.Text.Encoding.UTF8);
             status="Export: "+path; Debug.Log(status);
         }
-        void OnGUI() { if(!string.IsNullOrEmpty(status)) GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status); }
+        void OnGUI() { if(current=="editor") xmlEditor.Draw(); if(!string.IsNullOrEmpty(status)) GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status); }
     }
 }
