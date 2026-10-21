@@ -118,12 +118,17 @@ namespace BuildYourFurniture
                 if(S(part,"kind")=="lShapePanel")
                 {
                     if(register==null)throw new InvalidOperationException("L-shaped panel needs mesh registration");
-                    float left=Evaluate(S(change,"width",S(part,"width")),vars)*.001f;
-                    float right=Evaluate(S(change,"depth",S(part,"depth")),vars)*.001f;
-                    float ld=Evaluate(S(change,"leftDepth",S(part,"leftDepth")),vars)*.001f;
-                    float rd=Evaluate(S(change,"rightDepth",S(part,"rightDepth")),vars)*.001f;
-                    var mesh=LShapePanelMesh.Create(S(cabinet,"id")+"_"+id,left,right,ld,rd,size.y,
-                        new Vector3(ox,y,oz),angle,color);
+                    var polygon=(change?.Element("outline")??part.Element("outline"));
+                    if(polygon==null)throw new InvalidOperationException("Missing outline for "+id);
+                    var outline=new List<Vector2>();
+                    foreach(var vertex in polygon.Elements("point"))
+                        outline.Add(new Vector2(
+                            Evaluate(S(vertex,"x"),vars)*.001f,
+                            Evaluate(S(vertex,"z"),vars)*.001f));
+                    // Mesh coordinates are local to the part's XML origin.
+                    // Its y coordinate denotes the underside, not the centre.
+                    var mesh=LShapePanelMesh.Create(S(cabinet,"id")+"_"+id,outline,size.y,
+                        position,angle,color);
                     register(mesh);
                 }
                 else cube(S(cabinet,"id")+"_"+id,position,size,color,angle);
