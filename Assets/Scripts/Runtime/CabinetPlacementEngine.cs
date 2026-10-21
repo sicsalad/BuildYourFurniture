@@ -38,7 +38,7 @@ namespace BuildYourFurniture
         {
             if(string.IsNullOrEmpty(elementId)||elementId=="CABINET")return Vector2.zero;
             string typeId=S(cabinet,"typeId",S(cabinet,"typeRef",S(cabinet,"type")));
-            var root=CabinetTypeEngine.Load(typeId).Root;
+            var root=CabinetTypeEngine.EffectiveType(typeId);
             var element=root.Element("elements")?.Elements("element").FirstOrDefault(p=>S(p,"id")==elementId);
             if(element==null)throw new InvalidOperationException("Unknown docking element "+elementId+" in "+S(cabinet,"id"));
             var vars=CabinetTypeEngine.Variables(root,cabinet);
@@ -54,7 +54,7 @@ namespace BuildYourFurniture
                 float depth=Dim(cabinet,"depth",Dim(cabinet,"rightLength",560));
                 return center+FaceOffset(width,depth,face);
             }
-            var root=CabinetTypeEngine.Load(S(cabinet,"typeId",S(cabinet,"typeRef",S(cabinet,"type")))).Root;
+            var root=CabinetTypeEngine.EffectiveType(S(cabinet,"typeId",S(cabinet,"typeRef",S(cabinet,"type"))));
             var el=root.Element("elements").Elements("element").First(p=>S(p,"id")==elementId);
             var vars=CabinetTypeEngine.Variables(root,cabinet);
             float w=CabinetTypeEngine.Evaluate(S(el,"width"),vars),d=CabinetTypeEngine.Evaluate(S(el,"depth"),vars);
