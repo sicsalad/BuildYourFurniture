@@ -2,6 +2,6 @@
 <cabinetType id="empty" version="1" name="Géphelyes üres szekrény" unit="mm" finishedDimensions="true">
  <inherits typeId="normal"/>
  <parameters><param id="plinth" default="0"/></parameters>
- <overrides><element id="BASE" enabled="false"/><element id="PLINTH" enabled="false"/><element id="LEFT" height="$height" y="$height/2"/><element id="RIGHT" height="$height" y="$height/2"/><element id="BACK" height="$height" y="$height/2"/></overrides>
+ <overrides><element id="BASE" enabled="false"/><element id="PLINTH" enabled="false"/><element id="LEFT" height="$height" y="$height/2"><placement mode="absolute"/></element><element id="RIGHT" height="$height" y="$height/2"><placement mode="absolute"/></element><element id="BACK" height="$height" y="$height/2"><placement mode="absolute"/></element></overrides>
  <slots><slot id="APPLIANCE" type="appliance" x="0" y="$applianceHeight/2" z="0" alignment="bottomCenter"/></slots>
 </cabinetType>
