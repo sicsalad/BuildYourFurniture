@@ -81,6 +81,29 @@ namespace BuildYourFurniture
                 if(size.x<=0||size.y<=0||size.z<=0)throw new InvalidOperationException("Invalid element "+id+" in "+S(cabinet,"id"));
                 cube(S(cabinet,"id")+"_"+id,position,size,color,angle);
             }
+            if(typeId=="corner")BuildCornerDrawer(cabinet,cube);
+        }
+        // Optional drawer front belonging to the corner instance, using the right arm.
+        // The full drawer box/runner assembly will be described in its own XML type.
+        public static void BuildCornerDrawer(XElement cabinet,Action<string,Vector3,Vector3,Color,float> cube)
+        {
+            var drawer=cabinet.Element("drawer");
+            if(drawer==null)return;
+            float x=Num(S(cabinet,"x"))*.001f,z=Num(S(cabinet,"y"))*.001f;
+            float angle=Num(S(cabinet,"rotation")),rad=angle*Mathf.Deg2Rad;
+            float leftDepth=Num(S(cabinet,"leftDepth","560"))*.001f;
+            float rightDepth=Num(S(cabinet,"rightDepth","590"))*.001f;
+            float plinth=Num(S(cabinet,"plinth","80"))*.001f;
+            float board=Num(S(cabinet,"boardThickness","18"))*.001f;
+            float width=Num(S(drawer,"width","390"))*.001f;
+            float height=Num(S(drawer,"height","780"))*.001f;
+            float offset=Num(S(drawer,"offset"))*.001f;
+            float lx=leftDepth-.014f,lz=rightDepth+offset+width*.5f;
+            var position=new Vector3(x+Mathf.Cos(rad)*lx+Mathf.Sin(rad)*lz,
+                plinth+board+height*.5f,z-Mathf.Sin(rad)*lx+Mathf.Cos(rad)*lz);
+            Color color;
+            if(!ColorUtility.TryParseHtmlString(S(drawer,"color",S(cabinet,"frontColor","#20385B")),out color))color=Color.blue;
+            cube(S(cabinet,"id")+"_drawerFront",position,new Vector3(.018f,height-.002f,width-.002f),color,angle);
         }
         public static Vector3 CutSize(XElement element,Dictionary<string,float> variables)
         {
