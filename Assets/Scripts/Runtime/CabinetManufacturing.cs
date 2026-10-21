@@ -100,6 +100,29 @@ namespace BuildYourFurniture
                             float top=N(side,"y")+N(side,"height")/2;
                             if(Math.Abs(top-height)>.01f)errors.Add(id+"/"+sideId+": top not flush with cabinet top");
                         }
+                        var byId=parts.ToDictionary(e=>S(e,"id"));
+                        foreach(var joint in new[]{new[]{"R1","R2"},new[]{"R1","K1"},new[]{"R2","K2"},
+                            new[]{"LEFT","K1"},new[]{"RIGHT","K2"},new[]{"LEFT","S1"},
+                            new[]{"RIGHT","S2"},new[]{"S1","S2"}})
+                        {
+                            XElement a,b;
+                            if(!byId.TryGetValue(joint[0],out a)||!byId.TryGetValue(joint[1],out b))continue;
+                            float[] ac={N(a,"x"),N(a,"y"),N(a,"z")};
+                            float[] bc={N(b,"x"),N(b,"y"),N(b,"z")};
+                            float[] ad={N(a,"width"),N(a,"height"),N(a,"depth")};
+                            float[] bd={N(b,"width"),N(b,"height"),N(b,"depth")};
+                            int touching=0;bool separated=false,penetrating=true;
+                            for(int axis=0;axis<3;axis++)
+                            {
+                                float overlap=(ad[axis]+bd[axis])/2-Math.Abs(ac[axis]-bc[axis]);
+                                if(overlap<-.05f)separated=true;
+                                if(Math.Abs(overlap)<=.05f)touching++;
+                                if(overlap<=.05f)penetrating=false;
+                            }
+                            if(separated||touching==0)
+                                errors.Add(id+": joint "+joint[0]+"/"+joint[1]+
+                                    (separated?" has a gap":" overlaps without a mating face"));
+                        }
                         foreach(var part in parts.Where(e=>S(e,"id")!="BASE"))
                         {
                             float x=N(part,"x"),z=N(part,"z"),w=N(part,"width"),d=N(part,"depth");
