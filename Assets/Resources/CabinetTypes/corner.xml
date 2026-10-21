@@ -79,13 +79,13 @@
     <element id="S1" kind="panel" materialId="body" visibility="internal"
              width="$leftLength-2*$boardThickness" height="$boardThickness" depth="$braceWidth"
              edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness">
-      <placement><attach my="Top" to="BASE.Top" x="$leftLength/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+$braceWidth/2"/></placement>
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+1.5*$braceWidth"/></placement>
     </element>
     <element id="S2" kind="panel" materialId="body" visibility="internal"
-             width="$rightLength-($leftDepth-2*$edgeBandThickness)-$boardThickness-2*$edgeBandThickness"
-             height="$boardThickness" depth="$braceWidth"
+             width="$braceWidth"
+             height="$boardThickness" depth="$rightLength-($leftDepth-2*$edgeBandThickness)-$boardThickness-2*$edgeBandThickness"
              edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness">
-      <placement><attach my="Top" to="BASE.Top" x="$leftLength-$rightDepth/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+$braceWidth/2"/></placement>
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength-$rightDepth/2" y="$height-$plinth-$boardThickness" z="$rightLength-$boardThickness-($rightLength-($leftDepth-2*$edgeBandThickness)-$boardThickness-2*$edgeBandThickness)/2"/></placement>
     </element>
   </elements>
   <slots><slot id="RIGHT_DRAWER" type="drawer" attachTo="S2"/></slots>
