@@ -28,6 +28,7 @@ namespace BuildYourFurniture
         public static void Build(XDocument plan,Action<string,Vector3,Vector3,Color,float> cube)
         {
             if(plan?.Root==null)return;
+            CabinetPlacementEngine.Resolve(plan);
             var root=plan.Root;
             var section=root.Element("cabinetry");
             if(section==null)return;
@@ -48,7 +49,8 @@ namespace BuildYourFurniture
             float bandDefault=M(N(defaults,"edgeBandThickness",2));
             foreach(var e in cabinets)
             {
-                Resolve(e,byId,placement,angles,resolving);
+                placement[S(e,"id")]=new Vector2(M(N(e,"x")),M(N(e,"y")));
+                angles[S(e,"id")]=N(e,"rotation");
             }
             foreach(var e in cabinets)
             {
