@@ -28,7 +28,7 @@ namespace BuildYourFurniture
         public static void Build(XDocument plan,Action<string,Vector3,Vector3,Color,float> cube,Action<GameObject> register=null)
         {
             if(plan?.Root==null)return;
-            CabinetPlacementEngine.Resolve(plan);
+            // Positions are resolved on the complete plan before visibility filtering.
             var root=plan.Root;
             var section=root.Element("cabinetry");
             if(section==null)return;
