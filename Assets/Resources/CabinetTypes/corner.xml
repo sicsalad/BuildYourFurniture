@@ -1,17 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
-<cabinetType id="corner" version="1" name="L alakú sarokszekrény" unit="mm" finishedDimensions="true">
- <parameters><param id="leftLength" default="950"/><param id="rightLength" default="950"/><param id="leftDepth" default="560"/><param id="rightDepth" default="590"/><param id="height" default="860"/><param id="plinth" default="80"/><param id="boardThickness" default="18"/><param id="edgeBandThickness" default="2"/><param id="braceWidth" default="100"/></parameters>
- <materials><material id="body" color="#20385B" thickness="$boardThickness"/><material id="front" color="#20385B" thickness="18"/><material id="plinth" color="#A8A9AA" thickness="18"/></materials>
- <elements>
-  <element id="BASE" kind="polygonPanel" materialId="body" visibility="internal" width="$leftLength" height="$boardThickness" depth="$rightLength" leftDepth="$leftDepth" rightDepth="$rightDepth" x="0" y="$plinth" z="0" edgeFront="2" edgeBack="2" edgeLeft="2" edgeRight="2"><outline><point x="$leftLength-$leftDepth" z="0"/><point x="$leftLength" z="0"/><point x="$leftLength" z="$rightLength"/><point x="0" z="$rightLength"/><point x="0" z="$rightLength-$rightDepth"/><point x="$leftLength-$leftDepth" z="$rightLength-$rightDepth"/></outline><anchors><anchor id="InnerCorner" x="$leftLength-$leftDepth" y="0" z="$rightLength-$rightDepth"/><anchor id="LeftWingEnd" x="$leftLength" y="0" z="0"/><anchor id="RightWingEnd" x="0" y="0" z="$rightLength"/></anchors></element>
-  <element id="LEFT" kind="panel" materialId="body" visibility="external" width="$boardThickness" height="$height-$plinth-$boardThickness" depth="$rightLength-$rightDepth"><placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$boardThickness/2" z="($rightLength-$rightDepth)/2"/></placement></element>
-  <element id="RIGHT" kind="panel" materialId="body" visibility="external" width="$leftLength-$leftDepth" height="$height-$plinth-$boardThickness" depth="$boardThickness"><placement><attach my="Bottom" to="BASE.Top" x="($leftLength-$leftDepth)/2" z="$rightLength-$boardThickness/2"/></placement></element>
-  <element id="R1" kind="panel" materialId="body" visibility="internal" width="$braceWidth" height="$height-$plinth-$boardThickness-$braceWidth" depth="$boardThickness"><placement><attach my="Bottom" to="BASE.InnerCorner" x="$braceWidth/2" y="$boardThickness" z="-$boardThickness/2"/></placement></element>
-  <element id="R2" kind="panel" materialId="body" visibility="internal" width="$boardThickness" height="$height-$plinth-$boardThickness-$braceWidth" depth="$braceWidth"><placement><attach my="Bottom" to="BASE.InnerCorner" x="$boardThickness/2" y="$boardThickness" z="$braceWidth/2"/></placement></element>
-  <element id="K1" kind="panel" materialId="body" visibility="internal" width="$leftDepth-$boardThickness" height="$braceWidth" depth="$boardThickness"><placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$leftDepth+($leftDepth-$boardThickness)/2" y="$height-$plinth-$boardThickness-$braceWidth" z="$rightLength-$boardThickness/2"/></placement></element>
-  <element id="K2" kind="panel" materialId="body" visibility="internal" width="$boardThickness" height="$braceWidth" depth="$rightDepth-$boardThickness"><placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$boardThickness/2" y="$height-$plinth-$boardThickness-$braceWidth" z="$rightLength-$rightDepth+($rightDepth-$boardThickness)/2"/></placement></element>
-  <element id="S1" kind="panel" materialId="body" visibility="internal" width="$leftDepth-$boardThickness" height="$boardThickness" depth="$braceWidth"><placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$leftDepth+($leftDepth-$boardThickness)/2" y="$height-$plinth-2*$boardThickness" z="$rightLength-$rightDepth+$braceWidth/2"/></placement></element>
-  <element id="S2" kind="panel" materialId="body" visibility="internal" width="$braceWidth" height="$boardThickness" depth="$rightDepth-$boardThickness"><placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$leftDepth+$braceWidth/2" y="$height-$plinth-2*$boardThickness" z="$rightLength-$rightDepth+($rightDepth-$boardThickness)/2"/></placement></element>
- </elements>
- <slots><slot id="RIGHT_DRAWER" type="drawer" attachTo="S2" x="$leftDepth" y="$plinth+$boardThickness" z="$rightDepth" /></slots>
+<cabinetType id="corner" version="3" name="L alakú alsó sarokszekrény" unit="mm" finishedDimensions="true" heightIncludesPlinth="true">
+  <!-- All cabinet dimensions are finished outside dimensions including 2 mm edge bands. -->
+  <parameters>
+    <param id="leftLength" default="950"/><param id="rightLength" default="950"/>
+    <param id="leftDepth" default="560"/><param id="rightDepth" default="590"/>
+    <param id="height" default="860"/><param id="plinth" default="80"/>
+    <param id="boardThickness" default="18"/><param id="edgeBandThickness" default="2"/>
+    <param id="braceWidth" default="100"/>
+  </parameters>
+  <materials>
+    <material id="body" color="#20385B" thickness="$boardThickness"/>
+    <material id="front" color="#20385B" thickness="$boardThickness"/>
+    <material id="plinth" color="#A8A9AA" thickness="$boardThickness"/>
+  </materials>
+  <elements>
+    <!-- BASE polygon outline coordinates are FINISHED dimensions, in the horizontal XZ plane.
+         P1..P6 are clockwise around the L. The missing quadrant faces the room.
+         Each edge has its own band. Raw polygon contour is offset INWARDS by the band. -->
+    <element id="BASE" kind="polygonPanel" materialId="body" visibility="internal"
+             width="$leftLength" height="$boardThickness" depth="$rightLength"
+             x="0" y="$plinth" z="0">
+      <outline>
+        <point id="P1" x="$leftLength-$leftDepth" z="0"/>
+        <point id="P2" x="$leftLength" z="0"/>
+        <point id="P3" x="$leftLength" z="$rightLength"/>
+        <point id="P4" x="0" z="$rightLength"/>
+        <point id="P5" x="0" z="$rightLength-$rightDepth"/>
+        <point id="P6" x="$leftLength-$leftDepth" z="$rightLength-$rightDepth"/>
+      </outline>
+      <edgeBands>
+        <edge from="P1" to="P2" thickness="$edgeBandThickness"/>
+        <edge from="P2" to="P3" thickness="$edgeBandThickness"/>
+        <edge from="P3" to="P4" thickness="$edgeBandThickness"/>
+        <edge from="P4" to="P5" thickness="$edgeBandThickness"/>
+        <edge from="P5" to="P6" thickness="$edgeBandThickness"/>
+        <edge from="P6" to="P1" thickness="$edgeBandThickness"/>
+      </edgeBands>
+      <anchors>
+        <anchor id="InnerCorner" x="$leftLength-$leftDepth" y="$boardThickness" z="$rightLength-$rightDepth"/>
+        <anchor id="LeftWingEnd" x="$leftLength" y="$boardThickness" z="0"/>
+        <anchor id="RightWingEnd" x="0" y="$boardThickness" z="$rightLength"/>
+      </anchors>
+    </element>
+    <!-- Panel heights are FINISHED. The top band is subtracted from raw cut height. -->
+    <element id="LEFT" kind="panel" materialId="body" visibility="external"
+             width="$boardThickness" height="$height-$plinth-$boardThickness" depth="$leftDepth"
+             edgeFront="$edgeBandThickness" edgeBack="$edgeBandThickness" edgeTop="$edgeBandThickness">
+      <placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$boardThickness/2" z="$rightLength-$leftDepth/2"/></placement>
+    </element>
+    <element id="RIGHT" kind="panel" materialId="body" visibility="external"
+             width="$rightDepth" height="$height-$plinth-$boardThickness" depth="$boardThickness"
+             edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness" edgeTop="$edgeBandThickness">
+      <placement><attach my="Bottom" to="BASE.Top" x="$leftLength-$rightDepth/2" z="$rightLength-$boardThickness/2"/></placement>
+    </element>
+    <!-- R2 begins at inner corner and runs towards the right arm; R1 abuts R2 along left arm. -->
+    <element id="R2" kind="panel" materialId="body" visibility="internal"
+             width="$boardThickness" height="$height-$plinth-$boardThickness-$braceWidth" depth="$braceWidth"
+             edgeTop="$edgeBandThickness" edgeBack="$edgeBandThickness">
+      <placement><attach my="Bottom" to="BASE.InnerCorner" x="$boardThickness/2" z="$braceWidth/2"/></placement>
+    </element>
+    <element id="R1" kind="panel" materialId="body" visibility="internal"
+             width="$braceWidth" height="$height-$plinth-$boardThickness-$braceWidth" depth="$boardThickness"
+             edgeTop="$edgeBandThickness">
+      <placement><attach my="Bottom" to="R2.Left" x="-$braceWidth/2" z="-$braceWidth/2+$boardThickness/2"/></placement>
+    </element>
+    <!-- K1/K2 upright (vertical plane), their top is flush with cabinet top. -->
+    <element id="K1" kind="panel" materialId="body" visibility="internal"
+             width="$leftLength-$boardThickness-$edgeBandThickness" height="$braceWidth" depth="$boardThickness"
+             edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness" edgeTop="$edgeBandThickness">
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength/2" y="$height-$plinth-$boardThickness" z="$rightLength-$boardThickness/2"/></placement>
+    </element>
+    <element id="K2" kind="panel" materialId="body" visibility="internal"
+             width="$boardThickness" height="$braceWidth" depth="$rightLength-2*$boardThickness"
+             edgeFront="$edgeBandThickness" edgeBack="$edgeBandThickness">
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength-$boardThickness/2" y="$height-$plinth-$boardThickness" z="$rightLength/2"/></placement>
+    </element>
+    <!-- S1/S2 are horizontal panels. Their TOP is flush with cabinet top. -->
+    <element id="S1" kind="panel" materialId="body" visibility="internal"
+             width="$leftLength-2*$boardThickness" height="$boardThickness" depth="$braceWidth"
+             edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness">
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+$braceWidth/2"/></placement>
+    </element>
+    <element id="S2" kind="panel" materialId="body" visibility="internal"
+             width="$rightLength-($leftDepth-2*$edgeBandThickness)-$boardThickness-2*$edgeBandThickness"
+             height="$boardThickness" depth="$braceWidth"
+             edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness">
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength-$rightDepth/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+$braceWidth/2"/></placement>
+    </element>
+  </elements>
+  <slots><slot id="RIGHT_DRAWER" type="drawer" attachTo="S2"/></slots>
 </cabinetType>
