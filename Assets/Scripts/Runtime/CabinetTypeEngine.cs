@@ -123,7 +123,7 @@ namespace BuildYourFurniture
                 Vector3 position=new Vector3(ox+Mathf.Cos(rad)*x+Mathf.Sin(rad)*z,y,oz-Mathf.Sin(rad)*x+Mathf.Cos(rad)*z);
                 Vector3 size=new Vector3(v("width"),v("height"),v("depth"));
                 if(size.x<=0||size.y<=0||size.z<=0)throw new InvalidOperationException("Invalid element "+id+" in "+S(cabinet,"id"));
-                if(S(part,"kind")=="lShapePanel")
+                if(S(part,"kind")=="lShapePanel"||S(part,"kind")=="polygonPanel")
                 {
                     if(register==null)throw new InvalidOperationException("L-shaped panel needs mesh registration");
                     var polygon=(change?.Element("outline")??part.Element("outline"));
