@@ -68,12 +68,12 @@
     <element id="K1" kind="panel" materialId="body" visibility="internal"
              width="$leftLength-$boardThickness-$edgeBandThickness" height="$braceWidth" depth="$boardThickness"
              edgeLeft="$edgeBandThickness" edgeRight="$edgeBandThickness" edgeTop="$edgeBandThickness">
-      <placement><attach my="Top" to="BASE.Top" x="$leftLength/2" y="$height-$plinth-$boardThickness" z="$rightLength-$boardThickness/2"/></placement>
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength-$boardThickness-($leftLength-$boardThickness-$edgeBandThickness)/2" y="$height-$plinth-$boardThickness" z="$rightLength-$rightDepth+1.5*$boardThickness"/></placement>
     </element>
     <element id="K2" kind="panel" materialId="body" visibility="internal"
              width="$boardThickness" height="$braceWidth" depth="$rightLength-2*$boardThickness"
              edgeFront="$edgeBandThickness" edgeBack="$edgeBandThickness">
-      <placement><attach my="Top" to="BASE.Top" x="$leftLength-$boardThickness/2" y="$height-$plinth-$boardThickness" z="$rightLength/2"/></placement>
+      <placement><attach my="Top" to="BASE.Top" x="$leftLength-$leftDepth+$boardThickness/2" y="$height-$plinth-$boardThickness" z="$rightLength-$boardThickness-($rightLength-2*$boardThickness)/2"/></placement>
     </element>
     <!-- S1/S2 are horizontal panels. Their TOP is flush with cabinet top. -->
     <element id="S1" kind="panel" materialId="body" visibility="internal"
