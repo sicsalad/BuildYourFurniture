@@ -66,8 +66,8 @@ namespace BuildYourFurniture
             {
                 int a=cap[i],b=cap[i+1],c=cap[i+2];
                 // Positive XY winding points downward when mapped to Unity XZ.
-                triangles.Add(a+count);triangles.Add(b+count);triangles.Add(c+count);
-                triangles.Add(a);triangles.Add(c);triangles.Add(b);
+                triangles.Add(a+count);triangles.Add(c+count);triangles.Add(b+count);
+                triangles.Add(a);triangles.Add(b);triangles.Add(c);
             }
             for(int i=0;i<count;i++)
             {
