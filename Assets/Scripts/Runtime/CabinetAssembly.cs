@@ -54,7 +54,7 @@ namespace BuildYourFurniture
                 var change=cabinet.Element("elements")?.Elements("element").FirstOrDefault(e=>S(e,"id")==id);
                 var placement=change?.Element("placement")??part.Element("placement");
                 Vector3 center;
-                if(placement==null)center=P(part,vars);
+                if(placement==null||S(placement,"mode")=="absolute")center=P(part,vars);
                 else
                 {
                     var attach=placement.Element("attach");
