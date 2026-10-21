@@ -79,12 +79,12 @@ namespace BuildYourFurniture
                 Action<string,float,float,float,float,float,float,Color> box=(name,x,y,z,sx,sy,sz,color)=>
                     cube(id+"_"+name,position(x,y,z),new Vector3(sx,sy,sz),color,angle);
                 // The exposed edge bands add up to the nominal outside dimensions.
-                box("leftSide", -w*.5f+t*.5f,plinth+bodyHeight*.5f,0,t,bodyHeight,d,body);
-                box("rightSide",w*.5f-t*.5f,plinth+bodyHeight*.5f,0,t,bodyHeight,d,body);
+                box("leftSide", -w*.5f+t*.5f,plinth+t+(bodyHeight-t)*.5f,0,t,bodyHeight-t,d,body);
+                box("rightSide",w*.5f-t*.5f,plinth+t+(bodyHeight-t)*.5f,0,t,bodyHeight-t,d,body);
                 box("backboard",0,plinth+bodyHeight*.5f,d*.5f-back*.5f,w-2*t,bodyHeight,back,ColorOf(S(e,"backColor","#B5AB98"),body));
                 bool empty=S(e,"type")=="empty";
                 if(!empty)
-                    box("bottomPanel",0,plinth+t*.5f,0,w-2*t,t,d-back,body);
+                    box("bottomPanel",0,plinth+t*.5f,0,w,t,d-back,body);
                 // Two 100 mm upper cross braces, front and rear.
                 box("frontTopBrace",0,h-t*.5f,-d*.5f+brace*.5f,w-2*t,t,brace,body);
                 box("rearTopBrace",0,h-t*.5f,d*.5f-brace*.5f,w-2*t,t,brace,body);
