@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cabinetType id="normal" version="1" name="Normál alsó szekrény" unit="mm" finishedDimensions="true">
+ <parameters><param id="width" default="600"/><param id="height" default="860"/><param id="depth" default="560"/><param id="plinth" default="80"/><param id="boardThickness" default="18"/><param id="edgeBandThickness" default="2"/><param id="braceWidth" default="100"/></parameters>
+ <materials><material id="body" color="#20385B" thickness="$boardThickness"/><material id="back" color="#B5AB98" thickness="6"/><material id="plinth" color="#A8A9AA" thickness="18"/></materials>
+ <elements>
+  <element id="BASE" kind="panel" materialId="body" visibility="internal" enabled="true" width="$width" height="$boardThickness" depth="$depth" x="0" y="$plinth+$boardThickness/2" z="0" edgeFront="2" edgeBack="2" edgeLeft="2" edgeRight="2"><anchor id="leftTop" x="-$width/2" y="$boardThickness/2" z="0"/><anchor id="rightTop" x="$width/2" y="$boardThickness/2" z="0"/></element>
+  <element id="LEFT" kind="panel" materialId="body" visibility="external" width="$boardThickness" height="$height-$plinth-$boardThickness" depth="$depth" x="-$width/2+$boardThickness/2" y="$plinth+$boardThickness+($height-$plinth-$boardThickness)/2" z="0" edgeFront="2" edgeBack="2" edgeTop="2" edgeBottom="0"/>
+  <element id="RIGHT" kind="panel" materialId="body" visibility="external" width="$boardThickness" height="$height-$plinth-$boardThickness" depth="$depth" x="$width/2-$boardThickness/2" y="$plinth+$boardThickness+($height-$plinth-$boardThickness)/2" z="0" edgeFront="2" edgeBack="2" edgeTop="2" edgeBottom="0"/>
+  <element id="BACK" kind="panel" materialId="back" visibility="internal" width="$width-2*$boardThickness" height="$height-$plinth-$boardThickness" depth="6" x="0" y="$plinth+$boardThickness+($height-$plinth-$boardThickness)/2" z="$depth/2-3"/>
+  <element id="BRACE_FRONT" kind="brace" materialId="body" visibility="internal" width="$width-2*$boardThickness" height="$boardThickness" depth="$braceWidth" x="0" y="$height-$boardThickness/2" z="-$depth/2+$braceWidth/2" edgeFront="2" edgeBack="0"/>
+  <element id="BRACE_REAR" kind="brace" materialId="body" visibility="internal" width="$width-2*$boardThickness" height="$boardThickness" depth="$braceWidth" x="0" y="$height-$boardThickness/2" z="$depth/2-$braceWidth/2" edgeFront="0" edgeBack="2"/>
+  <element id="PLINTH" kind="panel" materialId="plinth" visibility="external" enabledWhen="plinth>0" width="$width" height="$plinth" depth="18" x="0" y="$plinth/2" z="-$depth/2+15"/>
+ </elements>
+</cabinetType>
