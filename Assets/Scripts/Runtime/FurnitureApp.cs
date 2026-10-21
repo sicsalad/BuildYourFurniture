@@ -415,7 +415,16 @@ namespace BuildYourFurniture
         {
             var path=Path.Combine(Application.persistentDataPath,"anyaglista.csv");
             File.WriteAllText(path,"\uFEFF"+MaterialsCsv(),System.Text.Encoding.UTF8);
-            status="Export: "+path; Debug.Log(status);
+            if(plan!=null)
+            {
+                var issues=CabinetManufacturing.Validate(plan);
+                var cutPath=Path.Combine(Application.persistentDataPath,"szabasjegyzek.csv");
+                File.WriteAllText(cutPath,CabinetManufacturing.Csv(plan),System.Text.Encoding.UTF8);
+                status="Export: "+path+" és "+cutPath+" | Ellenőrzés: "+issues.Count+" hiba";
+                foreach(var issue in issues)Debug.LogWarning("Cabinet validation: "+issue);
+            }
+            else status="Export: "+path;
+            Debug.Log(status);
         }
         void OnGUI() { if(current=="editor") xmlEditor.Draw(); if(!string.IsNullOrEmpty(status)) GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status); }
     }
