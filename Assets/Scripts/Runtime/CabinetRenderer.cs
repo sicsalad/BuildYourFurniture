@@ -53,6 +53,7 @@ namespace BuildYourFurniture
             foreach(var e in cabinets)
             {
                 string id=S(e,"id");
+                if(!string.IsNullOrEmpty(S(e,"typeId"))){CabinetTypeEngine.Build(e,defaults,cube);continue;}
                 if(S(e,"type")=="corner"){CornerCabinetRenderer.Build(e,defaults,cube);continue;}
                 Vector2 origin=placement[id];
                 float angle=angles[id], rad=angle*Mathf.Deg2Rad;
