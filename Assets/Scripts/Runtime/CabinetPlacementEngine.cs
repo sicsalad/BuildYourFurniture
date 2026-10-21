@@ -95,6 +95,8 @@ namespace BuildYourFurniture
                 {
                     XElement other;if(!byId.TryGetValue(S(dock,"cabinetId"),out other))throw new InvalidOperationException("Unknown docking cabinet: "+id);
                     Vector2 target=solve(other);
+                    if(orientation==null&&e.Attribute("rotation")==null)angle=angles[S(other,"id")];
+                    angles[id]=angle;
                     float otherAngle=angles[S(other,"id")];
                     string targetElement=S(dock,"targetElement","CABINET"), ownElement=S(dock,"element","CABINET");
                     Vector2 targetFace=Face(other,targetElement,S(dock,"targetFace","left"));
@@ -107,6 +109,8 @@ namespace BuildYourFurniture
                 {
                     XElement other;if(!byId.TryGetValue(S(e,"alignTo"),out other))throw new InvalidOperationException("Unknown alignment target: "+id);
                     Vector2 target=solve(other);
+                    if(orientation==null&&e.Attribute("rotation")==null)angle=angles[S(other,"id")];
+                    angles[id]=angle;
                     float sign=S(e,"side","left")=="left"?-1:1;
                     float ow=Dim(other,"width",600),w=Dim(e,"width",600);
                     p=target+Rotate(new Vector2(sign*(ow+w)/2,0),angles[S(other,"id")]);
