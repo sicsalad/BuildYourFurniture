@@ -78,11 +78,13 @@ namespace BuildYourFurniture
                     origin.y-Mathf.Sin(rad)*x+Mathf.Cos(rad)*z);
                 Action<string,float,float,float,float,float,float,Color> box=(name,x,y,z,sx,sy,sz,color)=>
                     cube(id+"_"+name,position(x,y,z),new Vector3(sx,sy,sz),color,angle);
-                // The exposed edge bands add up to the nominal outside dimensions.
-                box("leftSide", -w*.5f+t*.5f,plinth+t+(bodyHeight-t)*.5f,0,t,bodyHeight-t,d,body);
+                // Side panels stand on the base for normal cabinets; empty machine bays have no base.
+                bool empty=S(e,"type")=="empty";
+                float sideStart=plinth+(empty?0:t);
+                float sideHeight=bodyHeight-(empty?0:t);
+                box("leftSide", -w*.5f+t*.5f,sideStart+sideHeight*.5f,0,t,sideHeight,d,body);
                 box("rightSide",w*.5f-t*.5f,plinth+t+(bodyHeight-t)*.5f,0,t,bodyHeight-t,d,body);
                 box("backboard",0,plinth+bodyHeight*.5f,d*.5f-back*.5f,w-2*t,bodyHeight,back,ColorOf(S(e,"backColor","#B5AB98"),body));
-                bool empty=S(e,"type")=="empty";
                 if(!empty)
                     box("bottomPanel",0,plinth+t*.5f,0,w,t,d-back,body);
                 // Two 100 mm upper cross braces, front and rear.
