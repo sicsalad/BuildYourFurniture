@@ -38,3 +38,16 @@ The corner base is now a generic `polygonPanel` with six XML outline vertices an
 The same resolved positions are used for 3D rendering and the manufacturing part list. Unity Editor self-tests now include corner anchor checks.
 
 **Scope note:** This is a single-reference anchor/face constraint engine; multi-constraint mating, general 3D rotations of individual parts, edge-by-edge polygon banding, automated hardware design, and full collision/clearance solving are not yet implemented. The existing specialized section, drawer and appliance renderers are retained. Run `BuildYourFurniture > Validate Cabinet System` in Unity; runtime execution has not been independently verified here.
+
+
+## Corner cabinet v3: finished-size structural definition (2026-10-22)
+
+`Assets/Resources/CabinetTypes/corner.xml` was replaced with a new nine-part structural model: BASE, LEFT, RIGHT, R1, R2, K1, K2, S1, S2. Instance dimensions are **finished outside sizes including edge bands**. The sample F04 remains 950 × 950 mm in plan, with left/right depths 560/590 mm, height 860 mm including 80 mm plinth, board 18 mm, band 2 mm.
+
+The BASE is a **single 18 mm thick polygon**, with six finished-outline vertices P1..P6 and six individually specified edge bands. `PolygonCutGeometry.Raw` offsets each edge inward by its band thickness and intersects the adjacent offset lines to calculate the **raw six-vertex cut contour**. CSV manufacturing export includes a new `RawPolygonXZ_mm` column; this is a polygon outline, not a rectangular saw size.
+
+The finished body height is 780 mm; sides finish at 762 mm (raw cut height 760 mm when top band is 2 mm), yielding total finished height 80+18+762=860 mm. R1/R2 finish at 662 mm tall and sit on the base; K1/K2 upright braces finish at 100 mm tall and rest above them. The finished lengths of K1, K2, S1, S2 are respectively 930, 914, 914, and 372 mm. These are finished lengths; banding reductions apply only to cut sizes.
+
+Validation now checks finished L bounding dimensions, 18 mm base thickness, side-to-base contact, side top height, element envelope and eight key face contacts. Unity Editor self-tests assert the 950 mm envelope and S2 length. These checks have **not been executed in Unity** here.
+
+**Limitations:** The validation is based on axis-aligned bounding faces, not full mesh Boolean collision testing. The corner drawer remains a legacy special renderer and is not yet a complete XML-described drawer-box/runner assembly. Optional plinth is represented by the instance height offset but not yet a fully parameterized set of manufacturing panels. Old editable `corner.xml` copies in `Application.persistentDataPath/XML/CabinetTypes/` override the packaged Resources version; remove/migrate the saved copy before testing v3.
