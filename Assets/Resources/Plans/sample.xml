@@ -21,26 +21,26 @@
   <cabinetry>
     <defaults bodyColor="#20385B" frontColor="#20385B" plinthColor="#A8A9AA" handleColor="#101114" boardThickness="18" backThickness="6" edgeBandThickness="2" braceWidth="100" drawerGap="2" handleWidth="120" handleDiameter="10" frontFinish="mattePainted" frontCornerRadius="2" />
     <!-- Cabinet local -Z is front; rotation=90 faces the entrance side of W02. -->
-    <cabinet id="F01" name="Mosogep helye" type="empty" kind="base" width="700" height="860" depth="560" plinth="0" x="2380" y="350" rotation="90">
+    <cabinet id="F01" name="Mosogep helye" type="empty" typeRef="empty" kind="base" width="700" height="860" depth="560" plinth="0" x="2380" y="350" rotation="90">
       <edges left="front,top,back,bottom" right="front,top,back,bottom" />
       <appliance modelId="M03" width="595" height="845" depth="510" color="#303034" frontTexture="Textures/mosogep" />
     </cabinet>
-    <cabinet id="F02" name="Suto szekreny" type="normal" kind="base" width="600" height="860" depth="560" plinth="80" alignTo="F01" side="left">
+    <cabinet id="F02" name="Suto szekreny" type="normal" typeRef="normal" kind="base" width="600" height="860" depth="560" plinth="80" alignTo="F01" side="left">
       <sections><section type="drawer" height="180" /><section type="oven" height="600" modelId="M04" frontTexture="Textures/suto" /></sections>
     </cabinet>
-    <cabinet id="F03" name="Haromfiokos 35" type="normal" kind="base" width="350" height="860" depth="560" plinth="80" alignTo="F02" side="left">
+    <cabinet id="F03" name="Haromfiokos 35" type="normal" typeRef="normal" kind="base" width="350" height="860" depth="560" plinth="80" alignTo="F02" side="left">
       <sections><section type="drawer" height="380" /><section type="drawer" height="250" /><section type="drawer" height="150" /></sections>
     </cabinet>
     <!-- F04 replaces both former F04 and F05. Finished dimensions; plinth included in height. -->
-    <cabinet id="F04" name="L alaku sarokszekreny fiokkal" type="corner" kind="base"
+    <cabinet id="F04" name="L alaku sarokszekreny fiokkal" type="corner" typeId="corner" kind="base"
              leftLength="950" rightLength="950" leftDepth="560" rightDepth="590"
              height="860" plinth="80" boardThickness="18" x="1710" y="1190" rotation="0">
       <drawer id="DR04" width="390" height="780" offset="0" />
     </cabinet>
-    <cabinet id="F06" name="Haromfiokos 60" type="normal" kind="base" width="600" height="860" depth="560" plinth="80" x="1305" y="1920" rotation="0">
+    <cabinet id="F06" name="Haromfiokos 60" type="normal" typeRef="normal" kind="base" width="600" height="860" depth="560" plinth="80" x="1305" y="1920" rotation="0">
       <sections><section type="drawer" height="380" /><section type="drawer" height="250" /><section type="drawer" height="150" /></sections>
     </cabinet>
-    <cabinet id="F07" name="Mosogatogep helye" type="normal" kind="base" width="450" height="860" depth="560" plinth="0" alignTo="F06" side="left">
+    <cabinet id="F07" name="Mosogatogep helye" type="normal" typeRef="normal" kind="base" width="450" height="860" depth="560" plinth="0" alignTo="F06" side="left">
       <sections><section type="dishwasher" height="780" color="#7E8083" /></sections>
     </cabinet>
     <countertops>
