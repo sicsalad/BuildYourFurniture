@@ -88,11 +88,12 @@ namespace BuildYourFurniture
         }
         public static void Build(XElement cabinet,XElement defaults,Action<string,Vector3,Vector3,Color,float> cube, Action<GameObject> register=null)
         {
-            string typeId=S(cabinet,"typeId",S(cabinet,"type","normal"));
+            string typeId=S(cabinet,"typeId",S(cabinet,"typeRef",S(cabinet,"type","normal")));
             var type=EffectiveType(typeId);
             var vars=Variables(type,cabinet);
             if(defaults!=null)foreach(var a in defaults.Attributes())
                 if(!vars.ContainsKey(a.Name.LocalName))vars[a.Name.LocalName]=Num(a.Value);
+            var centers=CabinetAssembly.Resolve(type,cabinet,vars);
             float angle=Num(S(cabinet,"rotation"));
             float rad=angle*Mathf.Deg2Rad;
             float ox=Num(S(cabinet,"x"))*.001f,oz=Num(S(cabinet,"y"))*.001f;
@@ -111,7 +112,8 @@ namespace BuildYourFurniture
                 string hex=S(change,"color",S(cabinet,"bodyColor",S(material,"color","#20385B")));
                 if(!ColorUtility.TryParseHtmlString(hex,out color))color=Color.gray;
                 Func<string,float> v=k=>Evaluate(S(change,k,S(part,k,"0")),vars)*.001f;
-                float x=v("x"),y=v("y"),z=v("z");
+                var resolved=centers[id];
+                float x=resolved.x*.001f,y=resolved.y*.001f,z=resolved.z*.001f;
                 Vector3 position=new Vector3(ox+Mathf.Cos(rad)*x+Mathf.Sin(rad)*z,y,oz-Mathf.Sin(rad)*x+Mathf.Cos(rad)*z);
                 Vector3 size=new Vector3(v("width"),v("height"),v("depth"));
                 if(size.x<=0||size.y<=0||size.z<=0)throw new InvalidOperationException("Invalid element "+id+" in "+S(cabinet,"id"));
@@ -161,6 +163,7 @@ namespace BuildYourFurniture
         {
             var type=EffectiveType(S(cabinet,"typeId",S(cabinet,"typeRef",S(cabinet,"type"))));
             var variables=Variables(type,cabinet);
+            var centers=CabinetAssembly.Resolve(type,cabinet,variables);
             foreach(var element in type.Element("elements").Elements("element"))
             {
                 var change=cabinet.Element("elements")?.Elements("element").FirstOrDefault(e=>S(e,"id")==S(element,"id"));
@@ -170,6 +173,10 @@ namespace BuildYourFurniture
                 if(change!=null)foreach(var a in change.Attributes())copy.SetAttributeValue(a.Name,a.Value);
                 foreach(var key in new[]{"width","height","depth","x","y","z"})
                     copy.SetAttributeValue(key,Evaluate(S(copy,key,"0"),variables).ToString("0.###",CultureInfo.InvariantCulture));
+                Vector3 center=centers[S(copy,"id")];
+                copy.SetAttributeValue("x",center.x.ToString("0.###",CultureInfo.InvariantCulture));
+                copy.SetAttributeValue("y",center.y.ToString("0.###",CultureInfo.InvariantCulture));
+                copy.SetAttributeValue("z",center.z.ToString("0.###",CultureInfo.InvariantCulture));
                 yield return copy;
             }
         }
