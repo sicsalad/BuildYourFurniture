@@ -63,6 +63,8 @@ namespace BuildYourFurniture
                 check(Math.Abs(dimension(cornerParts["LEFT"],"y")+
                     dimension(cornerParts["LEFT"],"height")/2-860)<.01f,"finished 860 mm cabinet height");
                 check(Math.Abs(dimension(cornerParts["S2"],"depth")-372)<.01f,"S2 finished 372 mm");
+                check(Math.Abs(dimension(cornerParts["RIGHT"],"x")-dimension(corner,"rightDepth")/2)<.01f,"right panel at outer wing end");
+                check(Math.Abs(dimension(cornerParts["LEFT"],"z")-(dimension(corner,"rightLength")-dimension(corner,"leftDepth")/2))<.01f,"left panel at outer wing end");
                 string csv=CabinetManufacturing.Csv(plan);
                 check(csv.Contains("F02")&&csv.Contains("CutWidth_mm"),"cut-list content");
                 var issues=CabinetManufacturing.Validate(plan);
