@@ -25,3 +25,16 @@
 - Geometric checks include positive part and raw cut sizes, side-to-base vertical contact, cabinet total height, corner wing dimensions, and cyclic docking references.
 - **Important manufacturing limitations:** this is an initial cut-list and validation pipeline, not certified CNC output. Corner base is currently modeled as two rectangles rather than one true L-shaped polygon. Physical interference, cabinet-to-wall clearances, drawer hardware, and every cross-cabinet collision are not fully checked. Inspect and verify all dimensions before cutting material.
 - Tests have been added as a Unity Editor menu command but have not been executed in an actual Unity installation in this environment.
+
+
+## Constraint-driven assembly v2
+
+The previous implementation is preserved on branch `backup/pre-constraint-xml-engine-20261022`; ongoing work stays on `main`.
+
+Structural parts now support declarative `<placement><attach my="Bottom" to="BASE.Top" x="..." y="..." z="..."/></placement>` constraints. The solver resolves referenced parts first, detects cycles, and calculates the local part center. Face names: `Center`, `Bottom`, `Top`, `Left`, `Right`, `Front`, `Back`. Named anchors are declared on a part using `<anchors><anchor id="InnerCorner" x="..." y="..." z="..."/></anchors>`. Anchor coordinates are local to the referenced part's origin. For polygon panels, `Top` is measured from the underside.
+
+The corner base is now a generic `polygonPanel` with six XML outline vertices and named `InnerCorner`, `LeftWingEnd`, `RightWingEnd` anchors. R1/R2 are attached to `BASE.InnerCorner`; both end panels and all K/S braces are attached to the base, with parametric offsets. The normal cabinet's sides, back and braces are attached to its base. The empty machine cabinet inherits the normal type and explicitly overrides the sides/back with `<placement mode="absolute"/>` so they reach the floor.
+
+The same resolved positions are used for 3D rendering and the manufacturing part list. Unity Editor self-tests now include corner anchor checks.
+
+**Scope note:** This is a single-reference anchor/face constraint engine; multi-constraint mating, general 3D rotations of individual parts, edge-by-edge polygon banding, automated hardware design, and full collision/clearance solving are not yet implemented. The existing specialized section, drawer and appliance renderers are retained. Run `BuildYourFurniture > Validate Cabinet System` in Unity; runtime execution has not been independently verified here.
