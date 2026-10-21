@@ -121,8 +121,8 @@ namespace BuildYourFurniture
             GUI.Label(new Rect(editorX+10,bounds.y+bounds.height-messageHeight-8,editorWidth-20,messageHeight),message,labelStyle);
             var textRect=new Rect(editorX+8,textY,editorWidth-16,bounds.y+bounds.height-messageHeight-textY-12);
             // Scroll view is independent of the file list, with monospaced-style layout.
-            scroll=GUI.BeginScrollView(textRect,scroll,new Rect(0,0,Mathf.Max(textRect.width-22,content.Length>0?textRect.width-22:1),Mathf.Max(textRect.height-22,(content.Split('\\n').Length+2)*(fontSize+7))));
-            var contentRect=new Rect(0,0,Mathf.Max(textRect.width-22,100),Mathf.Max(textRect.height-22,(content.Split('\\n').Length+2)*(fontSize+7)));
+            scroll=GUI.BeginScrollView(textRect,scroll,new Rect(0,0,Mathf.Max(textRect.width-22,content.Length>0?textRect.width-22:1),Mathf.Max(textRect.height-22,(content.Split('\n').Length+2)*(fontSize+7))));
+            var contentRect=new Rect(0,0,Mathf.Max(textRect.width-22,100),Mathf.Max(textRect.height-22,(content.Split('\n').Length+2)*(fontSize+7)));
             content=GUI.TextArea(contentRect,content,editorStyle);
             GUI.EndScrollView();
         }
