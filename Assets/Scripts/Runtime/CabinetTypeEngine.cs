@@ -43,6 +43,39 @@ namespace BuildYourFurniture
             if(!asset)throw new InvalidOperationException("Missing cabinet type XML: "+id);
             return XDocument.Parse(asset.text);
         }
+        public static XElement EffectiveType(string id)
+        {
+            return EffectiveType(id,new HashSet<string>(StringComparer.Ordinal));
+        }
+        static XElement EffectiveType(string id,HashSet<string> visiting)
+        {
+            if(!visiting.Add(id))throw new InvalidOperationException("Cyclic cabinet type inheritance: "+id);
+            XElement child=Load(id).Root;
+            var inheritance=child.Element("inherits");
+            if(inheritance==null){visiting.Remove(id);return child;}
+            var parent=EffectiveType(S(inheritance,"typeId"),visiting);
+            foreach(string group in new[]{"parameters","materials","elements","slots"})
+            {
+                var target=parent.Element(group);
+                if(target==null){target=new XElement(group);parent.Add(target);}
+                var source=child.Element(group);
+                if(source!=null)foreach(var element in source.Elements())
+                {
+                    var existing=target.Elements().FirstOrDefault(e=>e.Name==element.Name&&S(e,"id")==S(element,"id"));
+                    if(existing==null)target.Add(new XElement(element));
+                    else foreach(var attribute in element.Attributes())existing.SetAttributeValue(attribute.Name,attribute.Value);
+                }
+            }
+            var overrides=child.Element("overrides");
+            if(overrides!=null)foreach(var change in overrides.Elements("element"))
+            {
+                var target=parent.Element("elements").Elements("element").FirstOrDefault(e=>S(e,"id")==S(change,"id"));
+                if(target==null)throw new InvalidOperationException("Unknown inherited element "+S(change,"id"));
+                foreach(var attribute in change.Attributes())target.SetAttributeValue(attribute.Name,attribute.Value);
+            }
+            parent.SetAttributeValue("id",id);
+            visiting.Remove(id);return parent;
+        }
         public static Dictionary<string,float> Variables(XElement type,XElement cabinet)
         {
             var values=new Dictionary<string,float>(StringComparer.Ordinal);
@@ -56,9 +89,9 @@ namespace BuildYourFurniture
         public static void Build(XElement cabinet,XElement defaults,Action<string,Vector3,Vector3,Color,float> cube)
         {
             string typeId=S(cabinet,"typeId",S(cabinet,"type","normal"));
-            var type=Load(typeId).Root;
+            var type=EffectiveType(typeId);
             var vars=Variables(type,cabinet);
-            foreach(var a in defaults.Attributes())
+            if(defaults!=null)foreach(var a in defaults.Attributes())
                 if(!vars.ContainsKey(a.Name.LocalName))vars[a.Name.LocalName]=Num(a.Value);
             float angle=Num(S(cabinet,"rotation"));
             float rad=angle*Mathf.Deg2Rad;
@@ -107,6 +140,22 @@ namespace BuildYourFurniture
             Color color;
             if(!ColorUtility.TryParseHtmlString(S(drawer,"color",S(cabinet,"frontColor","#20385B")),out color))color=Color.blue;
             cube(S(cabinet,"id")+"_drawerFront",position,new Vector3(.018f,height-.002f,width-.002f),color,angle);
+        }
+        public static IEnumerable<XElement> Parts(XElement cabinet)
+        {
+            var type=EffectiveType(S(cabinet,"typeId",S(cabinet,"typeRef",S(cabinet,"type"))));
+            var variables=Variables(type,cabinet);
+            foreach(var element in type.Element("elements").Elements("element"))
+            {
+                var change=cabinet.Element("elements")?.Elements("element").FirstOrDefault(e=>S(e,"id")==S(element,"id"));
+                if(S(change,"enabled",S(element,"enabled","true"))=="false")continue;
+                if(S(element,"enabledWhen")=="plinth>0"&&variables["plinth"]<=0)continue;
+                var copy=new XElement(element);
+                if(change!=null)foreach(var a in change.Attributes())copy.SetAttributeValue(a.Name,a.Value);
+                foreach(var key in new[]{"width","height","depth","x","y","z"})
+                    copy.SetAttributeValue(key,Evaluate(S(copy,key,"0"),variables).ToString("0.###",CultureInfo.InvariantCulture));
+                yield return copy;
+            }
         }
         public static Vector3 CutSize(XElement element,Dictionary<string,float> variables)
         {
