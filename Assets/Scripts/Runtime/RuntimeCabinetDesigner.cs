@@ -273,6 +273,16 @@ namespace BuildYourFurniture
                 panel.Name="Bútorlap "+(document.Elements.Count+1);
                 document.Elements.Add(panel);selected=document.Elements.Count-1;fields.Clear();dirty=true;Rebuild();
             }
+            if(GUILayout.Button("+ Bútorlap L alak"))
+            {
+                var panel=CabinetDesignerDocument.PanelElement.LShape();
+                panel.Name="L alakú bútorlap "+(document.Elements.Count+1);
+                document.Elements.Add(panel);
+                selected=document.Elements.Count-1;
+                fields.Clear();
+                dirty=true;
+                Rebuild();
+            }
             if(GUILayout.Button("Elem duplikálása")&&selected>=0&&selected<document.Elements.Count)
             {
                 document.Elements.Add(document.Elements[selected].Clone());selected=document.Elements.Count-1;fields.Clear();dirty=true;Rebuild();
