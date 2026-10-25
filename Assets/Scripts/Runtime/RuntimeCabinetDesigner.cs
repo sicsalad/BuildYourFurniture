@@ -353,8 +353,9 @@ namespace BuildYourFurniture
             var thread=new System.Threading.Thread(()=>{
                 try
                 {
+                    var command="Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.OpenFileDialog; $d.Filter='Képek (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg'; if($d.ShowDialog() -eq 'OK') {[Console]::Write($d.FileName)}";
                     var psi=new System.Diagnostics.ProcessStartInfo("powershell.exe",
-                        "-NoProfile -STA -Command \\"Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.OpenFileDialog; $d.Filter='Képek (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg'; if($d.ShowDialog() -eq 'OK') {[Console]::Write($d.FileName)}\\"");
+                        "-NoProfile -STA -Command "+(char)34+command+(char)34);
                     psi.UseShellExecute=false;psi.RedirectStandardOutput=true;psi.CreateNoWindow=true;
                     using(var process=System.Diagnostics.Process.Start(psi))
                     {
