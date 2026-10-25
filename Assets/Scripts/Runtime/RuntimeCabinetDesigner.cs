@@ -733,35 +733,56 @@ namespace BuildYourFurniture
                         }
                     }
                 }
-                // Sweep in small increments so a fast drag cannot tunnel through a thin panel.
+                // Stop at the first contact. Positions are in mm; a tiny 0.1 mm
+                // clearance prevents floating-point SAT tolerance from leaving a red collision.
                 if(editMode=="Move"&&dragAxis>=0)
                 {
-                    var destination=p.Position;
-                    float length=Vector3.Distance(moveStart,destination);
-                    int steps=Mathf.Clamp(Mathf.CeilToInt(length/2f),1,4096);
-                    float lastSafe=0f;
-                    bool blocked=false;
-                    for(int step=1;step<=steps;step++)
+                    Vector3 destination=p.Position;
+                    Vector3 direction=destination-moveStart;
+                    float distance=direction.magnitude;
+                    if(distance>0.00001f)
                     {
-                        float t=(float)step/steps;
-                        p.Position=Vector3.Lerp(moveStart,destination,t);
-                        if(CabinetCollision.Collides(document,selected))
-                        {blocked=true;break;}
-                        lastSafe=t;
-                    }
-                    if(blocked)
-                    {
-                        float low=lastSafe,high=Mathf.Min(1f,lastSafe+1f/steps);
-                        for(int iteration=0;iteration<16;iteration++)
+                        bool startedOverlapping;
+                        p.Position=moveStart;
+                        startedOverlapping=CabinetCollision.Collides(document,selected);
+                        if(startedOverlapping)
                         {
-                            float mid=(low+high)*.5f;
-                            p.Position=Vector3.Lerp(moveStart,destination,mid);
-                            if(CabinetCollision.Collides(document,selected))high=mid;
-                            else low=mid;
+                            // An already invalid position must not be treated as a safe boundary.
+                            // Permit motion out of the collision; otherwise restore the start.
+                            p.Position=destination;
+                            if(CabinetCollision.Collides(document,selected))p.Position=moveStart;
                         }
-                        p.Position=Vector3.Lerp(moveStart,destination,low);
+                        else
+                        {
+                            float safe=0f,blocked=distance;
+                            bool hit=false;
+                            int steps=Mathf.Clamp(Mathf.CeilToInt(distance),1,16384);
+                            for(int step=1;step<=steps;step++)
+                            {
+                                float traveled=distance*step/steps;
+                                p.Position=moveStart+direction*(traveled/distance);
+                                if(CabinetCollision.Collides(document,selected))
+                                {blocked=traveled;hit=true;break;}
+                                safe=traveled;
+                            }
+                            if(hit)
+                            {
+                                // Binary search the actual contact boundary to sub-mm precision.
+                                for(int iteration=0;iteration<24;iteration++)
+                                {
+                                    float mid=(safe+blocked)*.5f;
+                                    p.Position=moveStart+direction*(mid/distance);
+                                    if(CabinetCollision.Collides(document,selected))blocked=mid;
+                                    else safe=mid;
+                                }
+                                safe=Mathf.Max(0f,safe-.1f);
+                            }
+                            p.Position=moveStart+direction*(safe/distance);
+                            if(!hit)p.Position=destination;
+                            // Defensive correction if the geometry/tolerance is degenerate.
+                            if(CabinetCollision.Collides(document,selected))p.Position=moveStart;
+                        }
                     }
-                    else p.Position=destination;
                 }
                 dirty=true;fields.Clear();Rebuild();
             }
