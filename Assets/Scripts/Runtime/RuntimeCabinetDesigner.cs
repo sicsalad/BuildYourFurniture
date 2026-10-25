@@ -16,6 +16,9 @@ namespace BuildYourFurniture
         readonly List<GameObject> meshes=new List<GameObject>();
         readonly Dictionary<Collider,int> meshOwners=new Dictionary<Collider,int>();
         int selected=-1;
+        bool elementExpanded=true;
+        HashSet<int> collisions=new HashSet<int>();
+        string collisionWarning="";
         Vector2 scroll,libraryScroll;
         bool libraryOpen,dirty;
         bool colorPopup,texturePopup;
@@ -88,6 +91,8 @@ namespace BuildYourFurniture
         void Rebuild()
         {
             ClearMeshes();error="";
+            collisions=CabinetCollision.FindAll(document);
+            collisionWarning=collisions.Count>0?"Ütközés: "+string.Join(", ",collisions.OrderBy(i=>i).Select(i=>document.Elements[i].Name).ToArray()):"";
             for(int i=0;i<document.Elements.Count;i++)
             {
                 var p=document.Elements[i];
@@ -205,7 +210,9 @@ namespace BuildYourFurniture
             if(libraryOpen)DrawLibrary();
             if(colorPopup)DrawColorPopup();
             if(texturePopup)DrawTexturePopup();
-            if(!string.IsNullOrEmpty(error))GUI.Box(new Rect(left+14,Screen.height-62,Mathf.Max(200,Screen.width-left-35),46),error);
+            if(!string.IsNullOrEmpty(error)||!string.IsNullOrEmpty(collisionWarning))
+                GUI.Box(new Rect(left+14,Screen.height-75,Mathf.Max(200,Screen.width-left-35),60),
+                    (string.IsNullOrEmpty(collisionWarning)?"":collisionWarning+"\\n")+error);
         }
         void DrawLibrary()
         {
@@ -446,11 +453,17 @@ namespace BuildYourFurniture
             }
             if(GUILayout.Button("+ Anyag"))
             {document.Materials.Add(new CabinetDesignerDocument.MaterialType{Id="material"+Guid.NewGuid().ToString("N").Substring(0,5),Name="Anyag",ColorId=document.Colors.FirstOrDefault()?.Id??""});dirty=true;}
-            GUILayout.Label("Alkatrészek",GUI.skin.box);
+            if(GUILayout.Button((elementExpanded?"▼ ":"▶ ")+"Alkatrészek ("+document.Elements.Count+")",GUILayout.Height(32)))elementExpanded=!elementExpanded;
+            if(elementExpanded)
+            {
             for(int i=0;i<document.Elements.Count;i++)
             {
                 GUILayout.BeginHorizontal();
-                if(GUILayout.Toggle(selected==i,document.Elements[i].Name,"Button")){if(selected!=i){selected=i;fields.Clear();}}
+                var previousColor=GUI.backgroundColor;
+                if(collisions.Contains(i))GUI.backgroundColor=new Color(1f,.32f,.32f);
+                if(GUILayout.Toggle(selected==i,(collisions.Contains(i)?"⚠ ":"")+document.Elements[i].Name,"Button"))
+                {if(selected!=i){selected=i;fields.Clear();}}
+                GUI.backgroundColor=previousColor;
                 if(GUILayout.Button("×",GUILayout.Width(28)))
                 {document.Elements.RemoveAt(i);selected=-1;dirty=true;Rebuild();GUILayout.EndHorizontal();break;}
                 GUILayout.EndHorizontal();
@@ -477,6 +490,7 @@ namespace BuildYourFurniture
                 document.Elements.Add(document.Elements[selected].Clone());selected=document.Elements.Count-1;fields.Clear();dirty=true;Rebuild();
             }
             GUILayout.EndHorizontal();
+            }
             if(selected<0||selected>=document.Elements.Count)return;
             var p=document.Elements[selected];
             GUILayout.Label("Kijelölt elem",GUI.skin.box);
@@ -487,7 +501,7 @@ namespace BuildYourFurniture
             rot.x=FloatField("rx","Forgatás X",rot.x);rot.y=FloatField("ry","Forgatás Y",rot.y);rot.z=FloatField("rz","Forgatás Z",rot.z);
             thick=Mathf.Max(.1f,FloatField("thick","Vastagság",thick));
             if(pos!=p.Position||rot!=p.Rotation||thick!=p.Thickness)
-            {p.Position=pos;p.Rotation=rot;p.Thickness=thick;Rebuild();}
+            {p.Position=pos;p.Rotation=rot;p.Thickness=thick;dirty=true;Rebuild();}
             GUILayout.Label("Kész körvonal (mm)");
             foreach(var v in p.Outline)
             {
@@ -650,6 +664,7 @@ namespace BuildYourFurniture
                 var line=HandleLine(dragAxis);var direction=line[1]-line[0];
                 float projected=Vector2.Dot(delta,direction.normalized)/Mathf.Max(5,direction.magnitude);
                 var p=document.Elements[selected];
+                var moveStart=p.Position;
                 if(editMode=="Move")p.Position+=Quaternion.Euler(p.Rotation)*Axis(dragAxis)*(projected*HandleLength()*1000);
                 else if(editMode=="Rotate")
                 {
@@ -670,6 +685,24 @@ namespace BuildYourFurniture
                             if(dragAxis==0){p.Outline[i].Point.x=min+(values[i]-min)*factor;p.Outline[i].XFormula="";}
                             else {p.Outline[i].Point.y=min+(values[i]-min)*factor;p.Outline[i].YFormula="";}
                         }
+                    }
+                }
+                // Prevent translation from passing through another part even during a large mouse step.
+                if(editMode=="Move"&&dragAxis>=0)
+                {
+                    var moved=p.Position;
+                    if(CabinetCollision.Collides(document,selected))
+                    {
+                        var start=moveStart;
+                        float low=0,high=1;
+                        for(int iteration=0;iteration<22;iteration++)
+                        {
+                            float mid=(low+high)*.5f;
+                            p.Position=Vector3.Lerp(start,moved,mid);
+                            if(CabinetCollision.Collides(document,selected))high=mid;
+                            else low=mid;
+                        }
+                        p.Position=Vector3.Lerp(start,moved,low);
                     }
                 }
                 dirty=true;fields.Clear();Rebuild();
