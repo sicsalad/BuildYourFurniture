@@ -738,8 +738,8 @@ namespace BuildYourFurniture
                 if(editMode=="Move"&&dragAxis>=0)
                 {
                     Vector3 destination=p.Position;
-                    Vector3 direction=destination-moveStart;
-                    float distance=direction.magnitude;
+                    Vector3 moveDirection=destination-moveStart;
+                    float distance=moveDirection.magnitude;
                     if(distance>0.00001f)
                     {
                         bool startedOverlapping;
@@ -760,7 +760,7 @@ namespace BuildYourFurniture
                             for(int step=1;step<=steps;step++)
                             {
                                 float traveled=distance*step/steps;
-                                p.Position=moveStart+direction*(traveled/distance);
+                                p.Position=moveStart+moveDirection*(traveled/distance);
                                 if(CabinetCollision.Collides(document,selected))
                                 {blocked=traveled;hit=true;break;}
                                 safe=traveled;
@@ -771,13 +771,13 @@ namespace BuildYourFurniture
                                 for(int iteration=0;iteration<24;iteration++)
                                 {
                                     float mid=(safe+blocked)*.5f;
-                                    p.Position=moveStart+direction*(mid/distance);
+                                    p.Position=moveStart+moveDirection*(mid/distance);
                                     if(CabinetCollision.Collides(document,selected))blocked=mid;
                                     else safe=mid;
                                 }
                                 safe=Mathf.Max(0f,safe-.1f);
                             }
-                            p.Position=moveStart+direction*(safe/distance);
+                            p.Position=moveStart+moveDirection*(safe/distance);
                             if(!hit)p.Position=destination;
                             // Defensive correction if the geometry/tolerance is degenerate.
                             if(CabinetCollision.Collides(document,selected))p.Position=moveStart;
