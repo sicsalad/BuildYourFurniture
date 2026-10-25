@@ -17,11 +17,15 @@ namespace BuildYourFurniture
         readonly List<GameObject> previewObjects=new List<GameObject>();
         float orbit=35,tilt=25,distance=2.3f;
         Vector2 mouseDown;
+        int activeAxis=-1;
+        readonly Color[] axisColors={new Color(.95f,.30f,.30f),new Color(.35f,.95f,.45f),new Color(.35f,.65f,1f)};
         enum Mode { Move, Resize, Rotate, Orbit }
         Mode mode=Mode.Move;
         bool dirty;
-        [MenuItem("BuildYourFurniture/Szekrény készítő")]
+        [MenuItem("BuildYourFurniture/Szekrény készítő",priority=100)]
         public static void Open()=>GetWindow<CabinetDesignerWindow>("Szekrény készítő");
+        [MenuItem("Window/BuildYourFurniture/Szekrény készítő",priority=1100)]
+        public static void OpenFromWindowMenu()=>Open();
         void OnEnable(){document=CabinetDesignerDocument.New();InitializePreview();}
         void OnDisable(){DisposePreview();}
         void InitializePreview()
@@ -251,13 +255,11 @@ namespace BuildYourFurniture
                 try
                 {
                     var resolved=document.Resolve(p);
-                    var finished=resolved.Outline.Select(v=>v.Point*.001f).ToList();
-                    // Mesh is always the FINISHED solid. Edge banding changes the core cut contour, not the outside.
-                    var go=LShapePanelMesh.Create(p.Name,finished,p.Thickness*.001f,
-                        p.Position*.001f,0,ElementColor(p));
-                    go.transform.rotation=Quaternion.Euler(p.Rotation);
-                    previewObjects.Add(go);
-                    preview.AddSingleGO(go);
+                    foreach(var go in CabinetDesignerPreviewGeometry.Build(resolved,ElementColor(p),new Color(.19f,.43f,.65f)))
+                    {
+                        previewObjects.Add(go);
+                        preview.AddSingleGO(go);
+                    }
                 }
                 catch(Exception ex){Debug.LogWarning("Cabinet preview "+p.Name+": "+ex.Message);}
             }
@@ -271,35 +273,48 @@ namespace BuildYourFurniture
             foreach(Mode m in Enum.GetValues(typeof(Mode)))
                 if(GUILayout.Toggle(mode==m,m.ToString(),"Button",GUILayout.Width(65)))mode=m;
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Bal egér: kijelölés / módosítás · Jobb egér: kamera",EditorStyles.miniLabel);
+            GUILayout.Label("X/Y/Z fogantyú: húzás · jobb egér: kamera",EditorStyles.miniLabel);
             EditorGUILayout.EndHorizontal();
             GUILayout.EndArea();
             Rect view=new Rect(rect.x+4,rect.y+38,rect.width-8,rect.height-42);
             if(view.width<10||view.height<10)return;
+            InitializePreview();
+            ConfigureCamera();
             var ev=Event.current;
             if(view.Contains(ev.mousePosition))
             {
-                if(ev.type==EventType.ScrollWheel){distance=Mathf.Clamp(distance+ev.delta.y*.12f,.3f,12);ev.Use();Repaint();}
-                if(ev.type==EventType.MouseDown){mouseDown=ev.mousePosition;if(ev.button==0)SelectAt(view,ev.mousePosition);ev.Use();}
+                if(ev.type==EventType.ScrollWheel)
+                {
+                    distance=Mathf.Clamp(distance+ev.delta.y*.12f,.3f,12);
+                    ev.Use();Repaint();
+                }
+                if(ev.type==EventType.MouseDown)
+                {
+                    mouseDown=ev.mousePosition;
+                    activeAxis=-1;
+                    if(ev.button==0)
+                    {
+                        activeAxis=HitAxis(view,ev.mousePosition);
+                        if(activeAxis<0)SelectAt(view,ev.mousePosition);
+                    }
+                    ev.Use();Repaint();
+                }
                 if(ev.type==EventType.MouseDrag)
                 {
                     Vector2 delta=ev.mousePosition-mouseDown;mouseDown=ev.mousePosition;
                     if(ev.button==1||mode==Mode.Orbit)
-                    {orbit+=delta.x*.45f;tilt=Mathf.Clamp(tilt-delta.y*.45f,-80,80);}
-                    else if(ev.button==0&&selected>=0&&selected<document.Elements.Count)
                     {
-                        var p=document.Elements[selected];
-                        if(mode==Mode.Move)p.Position+=new Vector3(delta.x*distance*.8f,0,-delta.y*distance*.8f);
-                        if(mode==Mode.Rotate)p.Rotation+=new Vector3(0,delta.x*.6f,0);
-                        if(mode==Mode.Resize)
-                        {
-                            float scale=Mathf.Clamp(1+delta.x*.006f,.05f,20);
-                            Vector2 pivot=p.Outline[0].Point;
-                            foreach(var vertex in p.Outline)vertex.Point=pivot+(vertex.Point-pivot)*scale;
-                        }
-                        Changed();
+                        orbit+=delta.x*.45f;
+                        tilt=Mathf.Clamp(tilt-delta.y*.45f,-80,80);
                     }
+                    else if(ev.button==0&&activeAxis>=0&&selected>=0&&selected<document.Elements.Count)
+                        DragAxis(view,delta,activeAxis);
                     ev.Use();Repaint();
+                }
+                if(ev.type==EventType.MouseUp)
+                {
+                    activeAxis=-1;
+                    ev.Use();
                 }
             }
             if(ev.type!=EventType.Repaint)return;
@@ -307,19 +322,126 @@ namespace BuildYourFurniture
             RebuildPreview();
             preview.BeginPreview(view,GUIStyle.none);
             var cam=preview.camera;
+            cam.Render();
+            var texture=preview.EndPreview();
+            GUI.DrawTexture(view,texture,ScaleMode.StretchToFill,false);
+            DrawGizmo(view);
+            if(selected>=0&&selected<document.Elements.Count)
+                GUI.Label(new Rect(view.x+8,view.y+8,view.width-16,20),
+                    "Kijelölve: "+document.Elements[selected].Name,EditorStyles.whiteLabel);
+        }
+        void ConfigureCamera()
+        {
+            var cam=preview.camera;
             Vector3 center=Vector3.zero;
-            if(document.Elements.Count>0)center=document.Elements.Aggregate(Vector3.zero,(sum,p)=>sum+p.Position)/(document.Elements.Count*1000f);
+            if(document.Elements.Count>0)
+                center=document.Elements.Aggregate(Vector3.zero,(sum,p)=>sum+p.Position)/(document.Elements.Count*1000f);
             var orientation=Quaternion.Euler(tilt,orbit,0);
             cam.transform.position=center+orientation*new Vector3(0,0,-distance);
             cam.transform.LookAt(center);
             cam.clearFlags=CameraClearFlags.SolidColor;
             cam.backgroundColor=new Color(.15f,.17f,.20f);
-            cam.Render();
-            var texture=preview.EndPreview();
-            GUI.DrawTexture(view,texture,ScaleMode.StretchToFill,false);
-            if(selected>=0&&selected<document.Elements.Count)
-                GUI.Label(new Rect(view.x+8,view.y+8,view.width-16,20),
-                    "Kijelölve: "+document.Elements[selected].Name,EditorStyles.whiteLabel);
+        }
+        Vector3 Axis(int axis)=>axis==0?Vector3.right:axis==1?Vector3.up:Vector3.forward;
+        Vector3 GizmoOrigin()
+        {
+            var p=document.Elements[selected];
+            var resolved=document.Resolve(p);
+            var points=resolved.Outline.Select(v=>v.Point).ToArray();
+            float minX=points.Min(v=>v.x),maxX=points.Max(v=>v.x);
+            float minZ=points.Min(v=>v.y),maxZ=points.Max(v=>v.y);
+            Vector3 local=new Vector3((minX+maxX)*.0005f,p.Thickness*.0005f,(minZ+maxZ)*.0005f);
+            return p.Position*.001f+Quaternion.Euler(p.Rotation)*local;
+        }
+        Vector2 Project(Rect view,Vector3 world)
+        {
+            var p=preview.camera.WorldToViewportPoint(world);
+            return new Vector2(view.x+p.x*view.width,view.y+(1-p.y)*view.height);
+        }
+        float GizmoLength()=>Mathf.Max(.13f,distance*.16f);
+        Vector2[] AxisPoints(Rect view,int axis)
+        {
+            Vector3 origin=GizmoOrigin();
+            var rotation=Quaternion.Euler(document.Elements[selected].Rotation);
+            var direction=rotation*Axis(axis);
+            return new[]{Project(view,origin),Project(view,origin+direction*GizmoLength())};
+        }
+        static float DistanceToSegment(Vector2 p,Vector2 a,Vector2 b)
+        {
+            var ab=b-a;
+            float t=Mathf.Clamp01(Vector2.Dot(p-a,ab)/Mathf.Max(.0001f,ab.sqrMagnitude));
+            return Vector2.Distance(p,a+ab*t);
+        }
+        int HitAxis(Rect view,Vector2 mouse)
+        {
+            if(mode==Mode.Orbit||selected<0||selected>=document.Elements.Count)return -1;
+            float best=12;int found=-1;
+            for(int axis=0;axis<3;axis++)
+            {
+                var ends=AxisPoints(view,axis);
+                float d=DistanceToSegment(mouse,ends[0],ends[1]);
+                if(d<best){best=d;found=axis;}
+            }
+            return found;
+        }
+        void DragAxis(Rect view,Vector2 mouseDelta,int axis)
+        {
+            var ends=AxisPoints(view,axis);
+            Vector2 screen=ends[1]-ends[0];
+            float screenLength=screen.magnitude;
+            if(screenLength<2)return;
+            float normalized=Vector2.Dot(mouseDelta,screen/screenLength)/screenLength;
+            float millimetres=normalized*GizmoLength()*1000;
+            var p=document.Elements[selected];
+            Vector3 localAxis=Axis(axis);
+            if(mode==Mode.Move)
+                p.Position+=Quaternion.Euler(p.Rotation)*localAxis*millimetres;
+            else if(mode==Mode.Rotate)
+            {
+                var euler=p.Rotation;
+                euler[axis]+=normalized*90;
+                p.Rotation=euler;
+            }
+            else if(mode==Mode.Resize)
+            {
+                if(axis==1)p.Thickness=Mathf.Max(.1f,p.Thickness+millimetres);
+                else
+                {
+                    var resolved=document.Resolve(p);
+                    float min=axis==0?resolved.Outline.Min(v=>v.Point.x):resolved.Outline.Min(v=>v.Point.y);
+                    float max=axis==0?resolved.Outline.Max(v=>v.Point.x):resolved.Outline.Max(v=>v.Point.y);
+                    float span=Mathf.Max(.01f,max-min);
+                    float scale=Mathf.Max(.02f,(span+millimetres)/span);
+                    for(int i=0;i<p.Outline.Count;i++)
+                    {
+                        var vertex=p.Outline[i];
+                        var point=resolved.Outline[i].Point;
+                        if(axis==0){vertex.Point.x=min+(point.x-min)*scale;vertex.XFormula="";}
+                        else {vertex.Point.y=min+(point.y-min)*scale;vertex.YFormula="";}
+                    }
+                }
+            }
+            Changed();
+        }
+        void DrawGizmo(Rect view)
+        {
+            if(mode==Mode.Orbit||selected<0||selected>=document.Elements.Count)return;
+            try
+            {
+                for(int axis=0;axis<3;axis++)
+                {
+                    var ends=AxisPoints(view,axis);
+                    Handles.BeginGUI();
+                    Handles.color=axisColors[axis];
+                    Handles.DrawAAPolyLine(activeAxis==axis?5:3,ends[0],ends[1]);
+                    Handles.EndGUI();
+                    var marker=new Rect(ends[1].x-9,ends[1].y-9,18,18);
+                    Color old=GUI.color;GUI.color=axisColors[axis];
+                    GUI.Box(marker,axis==0?"X":axis==1?"Y":"Z");
+                    GUI.color=old;
+                }
+            }
+            catch(Exception ex){Debug.LogWarning("Gizmo: "+ex.Message);}
         }
         void SelectAt(Rect view,Vector2 mouse)
         {
@@ -340,7 +462,7 @@ namespace BuildYourFurniture
             if(found>=0)
             {
                 var item=previewObjects[found];
-                selected=document.Elements.FindIndex(p=>p.Name==item.name);
+                selected=document.Elements.FindIndex(p=>item.name.StartsWith(p.Name+"_core",StringComparison.Ordinal)||item.name.StartsWith(p.Name+"_band_",StringComparison.Ordinal));
                 Repaint();
             }
         }
