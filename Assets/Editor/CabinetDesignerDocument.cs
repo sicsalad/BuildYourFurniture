@@ -66,26 +66,60 @@ namespace BuildYourFurniture
         }
         public XDocument ToXml()
         {
-            return new XDocument(new XElement("cabinetDesign",new XAttribute("version",1),
-                new XAttribute("id",Id),new XAttribute("name",Name),new XAttribute("unit","mm"),
-                new XAttribute("dimensionMode","finished"),
-                new XElement("dimensions",Dimensions.Select(v=>new XElement("dimension",new XAttribute("id",v.Id),
-                    new XAttribute("name",v.Name),new XAttribute("value",F(v.Value))))),
-                new XElement("colors",Colors.Select(v=>new XElement("color",new XAttribute("id",v.Id),
-                    new XAttribute("name",v.Name),new XAttribute("hex",v.Hex)))),
-                new XElement("materials",Materials.Select(v=>new XElement("material",new XAttribute("id",v.Id),
-                    new XAttribute("name",v.Name),new XAttribute("colorId",v.ColorId),new XAttribute("texture",v.Texture??"")))),
-                new XElement("elements",Elements.Select(p=>new XElement("element",new XAttribute("id",p.Id),
-                    new XAttribute("name",p.Name),new XAttribute("kind",p.Kind),new XAttribute("materialId",p.MaterialId),
-                    new XAttribute("x",F(p.Position.x)),new XAttribute("y",F(p.Position.y)),new XAttribute("z",F(p.Position.z)),
-                    new XAttribute("rx",F(p.Rotation.x)),new XAttribute("ry",F(p.Rotation.y)),new XAttribute("rz",F(p.Rotation.z)),
-                    new XAttribute("thickness",F(p.Thickness)),
-                    new XElement("outline",p.Outline.Select(v=>new XElement("point",new XAttribute("id",v.Id),
-                        new XAttribute("x",F(v.Point.x)),new XAttribute("y",F(v.Point.y)),new XAttribute("xFormula",v.XFormula??""),new XAttribute("yFormula",v.YFormula??"")))),
-                    new XElement("edges",Enumerable.Range(0,p.Outline.Count).Select(i=>new XElement("edge",
-                        new XAttribute("from",p.Outline[i].Id),
-                        new XAttribute("to",p.Outline[(i+1)%p.Outline.Count].Id),
-                        new XAttribute("band",F(p.Bands.ContainsKey(p.Outline[i].Id)?p.Bands[p.Outline[i].Id]:0)))))))));
+            var root=new XElement("cabinetDesign",
+                new XAttribute("version",1),
+                new XAttribute("id",Id),
+                new XAttribute("name",Name),
+                new XAttribute("unit","mm"),
+                new XAttribute("dimensionMode","finished"));
+            var dimensions=new XElement("dimensions");
+            foreach(var d in Dimensions)
+                dimensions.Add(new XElement("dimension",new XAttribute("id",d.Id),
+                    new XAttribute("name",d.Name),new XAttribute("value",F(d.Value))));
+            root.Add(dimensions);
+            var colors=new XElement("colors");
+            foreach(var color in Colors)
+                colors.Add(new XElement("color",new XAttribute("id",color.Id),
+                    new XAttribute("name",color.Name),new XAttribute("hex",color.Hex)));
+            root.Add(colors);
+            var materials=new XElement("materials");
+            foreach(var material in Materials)
+                materials.Add(new XElement("material",new XAttribute("id",material.Id),
+                    new XAttribute("name",material.Name),new XAttribute("colorId",material.ColorId),
+                    new XAttribute("texture",material.Texture??"")));
+            root.Add(materials);
+            var elements=new XElement("elements");
+            foreach(var panel in Elements)
+            {
+                var element=new XElement("element",new XAttribute("id",panel.Id),
+                    new XAttribute("name",panel.Name),new XAttribute("kind",panel.Kind),
+                    new XAttribute("materialId",panel.MaterialId),
+                    new XAttribute("x",F(panel.Position.x)),new XAttribute("y",F(panel.Position.y)),
+                    new XAttribute("z",F(panel.Position.z)),
+                    new XAttribute("rx",F(panel.Rotation.x)),new XAttribute("ry",F(panel.Rotation.y)),
+                    new XAttribute("rz",F(panel.Rotation.z)),
+                    new XAttribute("thickness",F(panel.Thickness)));
+                var outline=new XElement("outline");
+                foreach(var vertex in panel.Outline)
+                    outline.Add(new XElement("point",new XAttribute("id",vertex.Id),
+                        new XAttribute("x",F(vertex.Point.x)),new XAttribute("y",F(vertex.Point.y)),
+                        new XAttribute("xFormula",vertex.XFormula??""),
+                        new XAttribute("yFormula",vertex.YFormula??"")));
+                element.Add(outline);
+                var edges=new XElement("edges");
+                for(int i=0;i<panel.Outline.Count;i++)
+                {
+                    string from=panel.Outline[i].Id;
+                    float band=panel.Bands.ContainsKey(from)?panel.Bands[from]:0;
+                    edges.Add(new XElement("edge",new XAttribute("from",from),
+                        new XAttribute("to",panel.Outline[(i+1)%panel.Outline.Count].Id),
+                        new XAttribute("band",F(band))));
+                }
+                element.Add(edges);
+                elements.Add(element);
+            }
+            root.Add(elements);
+            return new XDocument(root);
         }
         public static CabinetDesignerDocument FromXml(XDocument xml)
         {
