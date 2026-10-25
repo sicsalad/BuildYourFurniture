@@ -175,6 +175,10 @@ namespace BuildYourFurniture
             if(GUILayout.Button("+ Bútorlap"))
             {
                 var p=CabinetDesignerDocument.PanelElement.Rectangle();
+                p.Outline[1].XFormula="$width";
+                p.Outline[2].XFormula="$width";
+                p.Outline[2].YFormula="$depth";
+                p.Outline[3].YFormula="$depth";
                 p.Name="Bútorlap "+(document.Elements.Count+1);
                 document.Elements.Add(p);selected=document.Elements.Count-1;Changed();
             }
@@ -207,6 +211,10 @@ namespace BuildYourFurniture
                 if(p.Outline.Count>3&&GUILayout.Button("×",GUILayout.Width(24)))
                 {p.Bands.Remove(vertex.Id);p.Outline.RemoveAt(i);Changed();break;}
                 EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal();
+                vertex.XFormula=EditorGUILayout.TextField("X képlet",vertex.XFormula);
+                vertex.YFormula=EditorGUILayout.TextField("Y képlet",vertex.YFormula);
+                EditorGUILayout.EndHorizontal();
             }
             if(GUILayout.Button("+ Körvonalpont"))
             {
@@ -221,7 +229,7 @@ namespace BuildYourFurniture
             }
             try
             {
-                var raw=CabinetDesignerDocument.RawOutline(p);
+                var raw=CabinetDesignerDocument.RawOutline(document.Resolve(p));
                 EditorGUILayout.HelpBox("Kész méret állandó. Szabáskoordináták: "+
                     string.Join("; ",raw.Select(v=>"("+v.x.ToString("0.##")+","+v.y.ToString("0.##")+")").ToArray()),MessageType.Info);
             }
@@ -242,7 +250,8 @@ namespace BuildYourFurniture
                 if(p.Outline.Count<3)continue;
                 try
                 {
-                    var finished=p.Outline.Select(v=>v.Point*.001f).ToList();
+                    var resolved=document.Resolve(p);
+                    var finished=resolved.Outline.Select(v=>v.Point*.001f).ToList();
                     // Mesh is always the FINISHED solid. Edge banding changes the core cut contour, not the outside.
                     var go=LShapePanelMesh.Create(p.Name,finished,p.Thickness*.001f,
                         p.Position*.001f,0,ElementColor(p));
