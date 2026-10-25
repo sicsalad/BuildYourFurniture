@@ -37,6 +37,20 @@ namespace BuildYourFurniture
                 p.Outline.Add(new Vertex{Id="P4",Point=new Vector2(0,depth)});
                 return p;
             }
+            // Six-point L panel, clockwise around the finished outside contour.
+            public static PanelElement LShape(float width=950,float depth=950,float armX=560,float armY=590)
+            {
+                if(width<=0||depth<=0||armX<=0||armY<=0||armX>=width||armY>=depth)
+                    throw new ArgumentOutOfRangeException("Invalid L panel dimensions");
+                var p=new PanelElement();
+                p.Outline.Add(new Vertex{Id="P1",Point=new Vector2(0,0)});
+                p.Outline.Add(new Vertex{Id="P2",Point=new Vector2(width,0)});
+                p.Outline.Add(new Vertex{Id="P3",Point=new Vector2(width,armY)});
+                p.Outline.Add(new Vertex{Id="P4",Point=new Vector2(armX,armY)});
+                p.Outline.Add(new Vertex{Id="P5",Point=new Vector2(armX,depth)});
+                p.Outline.Add(new Vertex{Id="P6",Point=new Vector2(0,depth)});
+                return p;
+            }
             public PanelElement Clone()
             {
                 var p=new PanelElement{Id=Guid.NewGuid().ToString("N"),Name=Name+" másolat",Kind=Kind,
