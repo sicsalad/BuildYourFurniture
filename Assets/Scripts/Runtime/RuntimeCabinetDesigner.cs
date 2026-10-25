@@ -766,6 +766,73 @@ namespace BuildYourFurniture
                 dirty=true;fields.Clear();Rebuild();
             }
         }
+        void DrawPointLabels()
+        {
+            if(!showPointLabels&&!pointEditMode)return;
+            if(selected<0||selected>=document.Elements.Count)return;
+            if(Event.current.type!=EventType.Repaint)return;
+            var panel=document.Elements[selected];
+            var resolved=document.Resolve(panel);
+            for(int i=0;i<resolved.Outline.Count;i++)
+            {
+                var vertex=resolved.Outline[i];
+                var world=panel.Position*.001f+Quaternion.Euler(panel.Rotation)*
+                    new Vector3(vertex.Point.x*.001f,panel.Thickness*.001f,vertex.Point.y*.001f);
+                if(camera3D.WorldToViewportPoint(world).z<=0)continue;
+                var screen=Project(world);
+                var previous=GUI.backgroundColor;
+                GUI.backgroundColor=i==firstPoint||i==secondPoint?Color.yellow:new Color(.6f,.85f,1f);
+                GUI.Box(new Rect(screen.x-24,screen.y-14,48,28),vertex.Id);
+                GUI.backgroundColor=previous;
+            }
+        }
+        bool SelectPointAt(Vector2 mouse)
+        {
+            var panel=document.Elements[selected];
+            var resolved=document.Resolve(panel);
+            float closest=23f;int hit=-1;
+            for(int i=0;i<resolved.Outline.Count;i++)
+            {
+                var point=resolved.Outline[i].Point;
+                var world=panel.Position*.001f+Quaternion.Euler(panel.Rotation)*
+                    new Vector3(point.x*.001f,panel.Thickness*.001f,point.y*.001f);
+                if(camera3D.WorldToViewportPoint(world).z<=0)continue;
+                float distance=Vector2.Distance(Project(world),mouse);
+                if(distance<closest){closest=distance;hit=i;}
+            }
+            if(hit<0)return false;
+            if(firstPoint<0||secondPoint>=0){firstPoint=hit;secondPoint=-1;}
+            else if(hit!=firstPoint)secondPoint=hit;
+            fields.Remove("pairX");fields.Remove("pairY");
+            return true;
+        }
+        void DrawPointPairEditor()
+        {
+            if(selected<0||selected>=document.Elements.Count)return;
+            var panel=document.Elements[selected];
+            var rect=new Rect(viewport.x+12,viewport.y+48,Mathf.Min(330,viewport.width-24),178);
+            GUI.Box(rect,"Pontpár szerkesztése");
+            GUILayout.BeginArea(new Rect(rect.x+8,rect.y+24,rect.width-16,rect.height-30));
+            if(firstPoint<0)GUILayout.Label("Kattints az első körvonalpontra.");
+            else if(secondPoint<0)GUILayout.Label(panel.Outline[firstPoint].Id+" kiválasztva. Kattints a második pontra.");
+            else
+            {
+                var first=panel.Outline[firstPoint];var second=panel.Outline[secondPoint];
+                GUILayout.Label(first.Id+" → "+second.Id+" (csak a második pont változik)");
+                float dx=second.Point.x-first.Point.x,dy=second.Point.y-first.Point.y;
+                float nextX=FloatField("pairX","Eltérés X",dx);
+                float nextY=FloatField("pairY","Eltérés Y",dy);
+                if(!Mathf.Approximately(nextX,dx)||!Mathf.Approximately(nextY,dy))
+                {
+                    second.Point=new Vector2(first.Point.x+nextX,first.Point.y+nextY);
+                    second.XFormula="";second.YFormula="";
+                    dirty=true;Rebuild();
+                }
+            }
+            if(GUILayout.Button("Kijelölés törlése"))
+            {firstPoint=-1;secondPoint=-1;fields.Remove("pairX");fields.Remove("pairY");}
+            GUILayout.EndArea();
+        }
         void DrawGizmos()
         {
             if(selected<0||selected>=document.Elements.Count)return;
