@@ -36,6 +36,12 @@ namespace BuildYourFurniture
         bool dragging,orbiting;
         Vector2 previousMouse;
         bool initialized;
+        bool showPointLabels=true,pointEditMode;
+        int firstPoint=-1,secondPoint=-1;
+        string scrubKey="";
+        float scrubStart;
+        Vector2 scrubMouse;
+        bool scrubActive;
         public void Initialize()
         {
             if(initialized)return;
@@ -203,10 +209,15 @@ namespace BuildYourFurniture
                     target,ScaleMode.StretchToFill,false);
             GUILayout.BeginArea(new Rect(viewport.x+8,viewport.y+4,viewport.width-16,30));
             GUILayout.BeginHorizontal();
+            if(GUILayout.Toggle(showPointLabels,"Pontok","Button",GUILayout.Width(72))!=showPointLabels)showPointLabels=!showPointLabels;
+            if(GUILayout.Toggle(pointEditMode,"Pontpár","Button",GUILayout.Width(72))!=pointEditMode)
+            {pointEditMode=!pointEditMode;firstPoint=-1;secondPoint=-1;}
             foreach(string mode in modes)if(GUILayout.Toggle(editMode==mode,mode,"Button",GUILayout.Width(80)))editMode=mode;
             GUILayout.Label("X / Y / Z fogantyúk • jobb egér: forgatás");
             GUILayout.EndHorizontal();GUILayout.EndArea();
             DrawGizmos();
+            DrawPointLabels();
+            if(pointEditMode)DrawPointPairEditor();
             if(libraryOpen)DrawLibrary();
             if(colorPopup)DrawColorPopup();
             if(texturePopup)DrawTexturePopup();
@@ -396,9 +407,43 @@ namespace BuildYourFurniture
         }
         float FloatField(string key,string label,float value)
         {
-            string input=Field(key,label,value.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture));
+            var ev=Event.current;
+            bool rotation=label.StartsWith("Forgatás ");
+            GUILayout.BeginHorizontal();
+            Rect labelRect=GUILayoutUtility.GetRect(new GUIContent(label+" ↔"),GUI.skin.label,GUILayout.Width(100));
+            GUI.Label(labelRect,label+" ↔");
+            int control=GUIUtility.GetControlID(key.GetHashCode(),FocusType.Passive,labelRect);
+            if(ev.type==EventType.MouseDown&&ev.button==0&&labelRect.Contains(ev.mousePosition))
+            {
+                GUIUtility.hotControl=control; scrubKey=key; scrubStart=value;
+                scrubMouse=ev.mousePosition; scrubActive=true; ev.Use();
+            }
+            if(scrubActive&&scrubKey==key)
+            {
+                if(ev.type==EventType.MouseDrag&&GUIUtility.hotControl==control)
+                {
+                    float dx=ev.mousePosition.x-scrubMouse.x;
+                    float next=rotation?Mathf.Round((scrubStart+dx*.9f)/90f)*90f:
+                        scrubStart+dx*(ev.shift?0.1f:1f);
+                    fields[key]=next.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+                    dirty=true;ev.Use();
+                }
+                if(ev.type==EventType.KeyDown&&ev.keyCode==KeyCode.Escape)
+                {
+                    fields[key]=scrubStart.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+                    scrubActive=false;GUIUtility.hotControl=0;ev.Use();
+                }
+                if(ev.type==EventType.MouseUp&&ev.button==0)
+                {scrubActive=false;GUIUtility.hotControl=0;ev.Use();}
+            }
+            string input;
+            if(!fields.TryGetValue(key,out input))
+                input=value.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+            string nextText=GUILayout.TextField(input);
+            fields[key]=nextText;
+            GUILayout.EndHorizontal();
             float parsed;
-            if(float.TryParse(input,System.Globalization.NumberStyles.Float,
+            if(float.TryParse(nextText,System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture,out parsed)&&Mathf.Abs(parsed-value)>.00001f)
             {dirty=true;return parsed;}
             return value;
@@ -647,7 +692,8 @@ namespace BuildYourFurniture
             }
             if(MouseDown(0)&&inside)
             {
-                dragAxis=HitHandle(mouse);dragging=dragAxis>=0;previousMouse=mouse;
+                if(pointEditMode&&selected>=0&&SelectPointAt(mouse))return;
+                dragAxis=pointEditMode?-1:HitHandle(mouse);dragging=dragAxis>=0;previousMouse=mouse;
                 if(!dragging)
                 {
                     var uv=ToViewport(mouse);
