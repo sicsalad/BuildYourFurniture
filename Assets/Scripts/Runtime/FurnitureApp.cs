@@ -18,6 +18,7 @@ namespace BuildYourFurniture
     public sealed class FurnitureApp : MonoBehaviour
     {
         Canvas canvas;
+        RuntimeCabinetDesigner runtimeCabinetDesigner;
         Font font;
         string current = "main";
         XDocument plan;
@@ -208,7 +209,22 @@ namespace BuildYourFurniture
         }
         void Show(string screen)
         {
+            if(runtimeCabinetDesigner!=null)
+            {
+                Destroy(runtimeCabinetDesigner.gameObject);
+                runtimeCabinetDesigner=null;
+            }
             Clear(); current = screen;
+            if(screen=="cabinetDesigner")
+            {
+                canvas.gameObject.SetActive(false);
+                var designerObject=new GameObject("Runtime Cabinet Designer");
+                runtimeCabinetDesigner=designerObject.AddComponent<RuntimeCabinetDesigner>();
+                runtimeCabinetDesigner.OnClose=()=>Show("main");
+                runtimeCabinetDesigner.Initialize();
+                return;
+            }
+            canvas.gameObject.SetActive(true);
             var asset = Resources.Load<TextAsset>("UI/"+screen);
             if (!asset) { Debug.LogError("Missing UI xml: "+screen); return; }
             var root = XDocument.Parse(asset.text).Root;
