@@ -28,9 +28,14 @@ namespace BuildYourFurniture
                     float band=panel.Bands.ContainsKey(panel.Outline[i].Id)?panel.Bands[panel.Outline[i].Id]:0;
                     if(band<=0)continue;
                     int j=(i+1)%finished.Length;
-                    var strip=new List<Vector2>{finished[i],finished[j],raw[j],raw[i]};
+                    var candidates=new[]{finished[i],finished[j],raw[j],raw[i]};
+                    var strip=new List<Vector2>();
+                    foreach(var point in candidates)
+                        if(strip.Count==0||(strip[strip.Count-1]-point).sqrMagnitude>.000001f)strip.Add(point);
+                    if(strip.Count>1&&(strip[0]-strip[strip.Count-1]).sqrMagnitude<=.000001f)strip.RemoveAt(strip.Count-1);
+                    if(strip.Count<3)continue;
                     float signedArea=0;
-                    for(int k=0;k<4;k++)signedArea+=strip[k].x*strip[(k+1)%4].y-strip[(k+1)%4].x*strip[k].y;
+                    for(int k=0;k<strip.Count;k++)signedArea+=strip[k].x*strip[(k+1)%strip.Count].y-strip[(k+1)%strip.Count].x*strip[k].y;
                     if(Mathf.Abs(signedArea)<.001f)continue;
                     var go=LShapePanelMesh.Create(panel.Name+"_band_"+panel.Outline[i].Id,
                         strip.Select(v=>v*.001f).ToList(),panel.Thickness*.001f,
