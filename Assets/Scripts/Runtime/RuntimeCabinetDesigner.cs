@@ -687,23 +687,35 @@ namespace BuildYourFurniture
                         }
                     }
                 }
-                // Prevent translation from passing through another part even during a large mouse step.
+                // Sweep in small increments so a fast drag cannot tunnel through a thin panel.
                 if(editMode=="Move"&&dragAxis>=0)
                 {
-                    var moved=p.Position;
-                    if(CabinetCollision.Collides(document,selected))
+                    var destination=p.Position;
+                    float length=Vector3.Distance(moveStart,destination);
+                    int steps=Mathf.Clamp(Mathf.CeilToInt(length/2f),1,4096);
+                    float lastSafe=0f;
+                    bool blocked=false;
+                    for(int step=1;step<=steps;step++)
                     {
-                        var start=moveStart;
-                        float low=0,high=1;
-                        for(int iteration=0;iteration<22;iteration++)
+                        float t=(float)step/steps;
+                        p.Position=Vector3.Lerp(moveStart,destination,t);
+                        if(CabinetCollision.Collides(document,selected))
+                        {blocked=true;break;}
+                        lastSafe=t;
+                    }
+                    if(blocked)
+                    {
+                        float low=lastSafe,high=Mathf.Min(1f,lastSafe+1f/steps);
+                        for(int iteration=0;iteration<16;iteration++)
                         {
                             float mid=(low+high)*.5f;
-                            p.Position=Vector3.Lerp(start,moved,mid);
+                            p.Position=Vector3.Lerp(moveStart,destination,mid);
                             if(CabinetCollision.Collides(document,selected))high=mid;
                             else low=mid;
                         }
-                        p.Position=Vector3.Lerp(start,moved,low);
+                        p.Position=Vector3.Lerp(moveStart,destination,low);
                     }
+                    else p.Position=destination;
                 }
                 dirty=true;fields.Clear();Rebuild();
             }
