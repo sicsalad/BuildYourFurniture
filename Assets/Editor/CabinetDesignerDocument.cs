@@ -22,7 +22,7 @@ namespace BuildYourFurniture
         public sealed class Dimension { public string Id,Name; public float Value; }
         public sealed class PaletteColor { public string Id,Name,Hex; }
         public sealed class MaterialType { public string Id,Name,ColorId,Texture; }
-        public sealed class Vertex { public string Id; public Vector2 Point; }
+        public sealed class Vertex { public string Id; public Vector2 Point; public string XFormula="",YFormula=""; }
         public sealed class PanelElement
         {
             public string Id=Guid.NewGuid().ToString("N"),Name="Bútorlap",Kind="panel",MaterialId="body";
@@ -43,7 +43,7 @@ namespace BuildYourFurniture
             {
                 var p=new PanelElement{Id=Guid.NewGuid().ToString("N"),Name=Name+" másolat",Kind=Kind,
                     MaterialId=MaterialId,Position=Position+new Vector3(30,0,30),Rotation=Rotation,Thickness=Thickness};
-                foreach(var v in Outline)p.Outline.Add(new Vertex{Id=v.Id,Point=v.Point});
+                foreach(var v in Outline)p.Outline.Add(new Vertex{Id=v.Id,Point=v.Point,XFormula=v.XFormula,YFormula=v.YFormula});
                 foreach(var b in Bands)p.Bands[b.Key]=b.Value;
                 return p;
             }
@@ -81,7 +81,7 @@ namespace BuildYourFurniture
                     new XAttribute("rx",F(p.Rotation.x)),new XAttribute("ry",F(p.Rotation.y)),new XAttribute("rz",F(p.Rotation.z)),
                     new XAttribute("thickness",F(p.Thickness)),
                     new XElement("outline",p.Outline.Select(v=>new XElement("point",new XAttribute("id",v.Id),
-                        new XAttribute("x",F(v.Point.x)),new XAttribute("y",F(v.Point.y))))),
+                        new XAttribute("x",F(v.Point.x)),new XAttribute("y",F(v.Point.y)),new XAttribute("xFormula",v.XFormula??""),new XAttribute("yFormula",v.YFormula??"")))),
                     new XElement("edges",Enumerable.Range(0,p.Outline.Count).Select(i=>new XElement("edge",
                         new XAttribute("from",p.Outline[i].Id),
                         new XAttribute("to",p.Outline[(i+1)%p.Outline.Count].Id),
@@ -104,7 +104,7 @@ namespace BuildYourFurniture
                     MaterialId=S(x,"materialId","body"),Thickness=N(x,"thickness",18),
                     Position=new Vector3(N(x,"x"),N(x,"y"),N(x,"z")),Rotation=new Vector3(N(x,"rx"),N(x,"ry"),N(x,"rz"))};
                 foreach(var v in x.Element("outline")?.Elements("point")??Enumerable.Empty<XElement>())
-                    p.Outline.Add(new Vertex{Id=S(v,"id"),Point=new Vector2(N(v,"x"),N(v,"y"))});
+                    p.Outline.Add(new Vertex{Id=S(v,"id"),Point=new Vector2(N(v,"x"),N(v,"y")),XFormula=S(v,"xFormula"),YFormula=S(v,"yFormula")});
                 foreach(var e in x.Element("edges")?.Elements("edge")??Enumerable.Empty<XElement>())
                     p.Bands[S(e,"from")]=N(e,"band");
                 d.Elements.Add(p);
@@ -126,6 +126,23 @@ namespace BuildYourFurniture
         {
             if(File.Exists(d.FilePath))File.Delete(d.FilePath);
             AssetDatabase.Refresh();
+        }
+        // Resolve expressions against named cabinet dimensions before preview and cut calculations.
+        // Formula syntax: $width, $depth, arithmetic and parentheses.
+        public PanelElement Resolve(PanelElement source)
+        {
+            var result=source.Clone();
+            result.Id=source.Id;result.Name=source.Name;result.Position=source.Position;
+            var vars=Dimensions.ToDictionary(d=>d.Id,d=>d.Value,StringComparer.Ordinal);
+            for(int i=0;i<result.Outline.Count;i++)
+            {
+                var vertex=result.Outline[i];
+                if(!string.IsNullOrWhiteSpace(vertex.XFormula))
+                    vertex.Point.x=CabinetTypeEngine.Evaluate(vertex.XFormula,vars);
+                if(!string.IsNullOrWhiteSpace(vertex.YFormula))
+                    vertex.Point.y=CabinetTypeEngine.Evaluate(vertex.YFormula,vars);
+            }
+            return result;
         }
         public static Vector2[] RawOutline(PanelElement p)
         {
