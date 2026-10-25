@@ -18,6 +18,11 @@ namespace BuildYourFurniture
         int selected=-1;
         Vector2 scroll,libraryScroll;
         bool libraryOpen,dirty;
+        bool colorPopup,texturePopup;
+        int editingColor=-1,editingMaterial=-1;
+        string colorInput="#383E42",ralInput="RAL 7016",textureSource="";
+        Vector2 paletteScroll,textureScroll;
+        readonly Dictionary<string,Texture2D> textureCache=new Dictionary<string,Texture2D>();
         string error="";
         float yaw=40,pitch=30,zoom=2.5f;
         string editMode="Move";
@@ -62,6 +67,8 @@ namespace BuildYourFurniture
         void OnDestroy()
         {
             ClearMeshes();
+            foreach(var entry in textureCache)if(entry.Key.StartsWith("imported:")&&entry.Value!=null)Destroy(entry.Value);
+            textureCache.Clear();
             if(camera3D!=null)camera3D.targetTexture=null;
             if(target!=null){target.Release();Destroy(target);}
         }
@@ -90,7 +97,7 @@ namespace BuildYourFurniture
                     var raw=CabinetDesignerDocument.RawOutline(resolved);
                     var finished=resolved.Outline.Select(v=>v.Point).ToArray();
                     Color color=ColorFor(p);
-                    AddSolid(p.Name+" core",raw,p.Thickness,p.Position,p.Rotation,color,i);
+                    AddSolid(p.Name+" core",raw,p.Thickness,p.Position,p.Rotation,color,i,p.MaterialId);
                     for(int j=0;j<finished.Length;j++)
                     {
                         float band=resolved.Bands.ContainsKey(resolved.Outline[j].Id)?resolved.Bands[resolved.Outline[j].Id]:0;
@@ -112,11 +119,27 @@ namespace BuildYourFurniture
             var color=document.Colors.FirstOrDefault(x=>x.Id==m?.ColorId);
             Color c;return ColorUtility.TryParseHtmlString(color?.Hex??"#BFA17A",out c)?c:Color.gray;
         }
-        void AddSolid(string name,Vector2[] outline,float thickness,Vector3 position,Vector3 rotation,Color color,int owner)
+        void AddSolid(string name,Vector2[] outline,float thickness,Vector3 position,Vector3 rotation,Color color,int owner,string materialId=null)
         {
             var obj=LShapePanelMesh.Create(name,outline.Select(p=>p*.001f).ToList(),thickness*.001f,
                 position*.001f,0,color);
             obj.transform.rotation=Quaternion.Euler(rotation);
+            if(materialId!=null)
+            {
+                var material=document.Materials.FirstOrDefault(x=>x.Id==materialId);
+                var id=material?.Texture;
+                if(!string.IsNullOrWhiteSpace(id))
+                {
+                    Texture2D texture;
+                    if(!textureCache.TryGetValue(id,out texture))
+                    {texture=CabinetAppearanceLibrary.Load(id);textureCache[id]=texture;}
+                    if(texture!=null)
+                    {
+                        var renderer=obj.GetComponent<MeshRenderer>();
+                        renderer.material.mainTexture=texture;
+                    }
+                }
+            }
             obj.layer=29;
             meshes.Add(obj);
             var collider=obj.GetComponent<Collider>();
@@ -180,6 +203,8 @@ namespace BuildYourFurniture
             GUILayout.EndHorizontal();GUILayout.EndArea();
             DrawGizmos();
             if(libraryOpen)DrawLibrary();
+            if(colorPopup)DrawColorPopup();
+            if(texturePopup)DrawTexturePopup();
             if(!string.IsNullOrEmpty(error))GUI.Box(new Rect(left+14,Screen.height-62,Mathf.Max(200,Screen.width-left-35),46),error);
         }
         void DrawLibrary()
@@ -205,6 +230,150 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             if(GUILayout.Button("Bezárás"))libraryOpen=false;
             GUILayout.EndArea();
+        }
+        void OpenColorPicker(int index)
+        {
+            editingColor=index;colorInput=document.Colors[index].Hex;
+            ralInput="";colorPopup=true;texturePopup=false;
+        }
+        void ApplyColor(string hex,string name=null)
+        {
+            Color parsed;
+            if(!ColorUtility.TryParseHtmlString(hex,out parsed))
+            {error="Érvénytelen HEX szín: "+hex;return;}
+            if(editingColor<0||editingColor>=document.Colors.Count)return;
+            var color=document.Colors[editingColor];
+            color.Hex="#"+ColorUtility.ToHtmlStringRGB(parsed);
+            if(!string.IsNullOrEmpty(name))color.Name=name;
+            colorInput=color.Hex;dirty=true;Rebuild();
+        }
+        void DrawColorPopup()
+        {
+            var rect=new Rect(Mathf.Max(5,(Screen.width-540)*.5f),Mathf.Max(5,(Screen.height-560)*.5f),
+                Mathf.Min(540,Screen.width-10),Mathf.Min(560,Screen.height-10));
+            GUI.Box(rect,"Színválasztó / RAL");
+            GUILayout.BeginArea(new Rect(rect.x+12,rect.y+30,rect.width-24,rect.height-42));
+            if(editingColor>=0&&editingColor<document.Colors.Count)
+            {
+                var item=document.Colors[editingColor];
+                item.Name=Field("colorName"+item.Id,"Szín neve",item.Name);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("HEX",GUILayout.Width(60));
+                colorInput=GUILayout.TextField(colorInput);
+                if(GUILayout.Button("Alkalmaz",GUILayout.Width(90)))ApplyColor(colorInput);
+                GUILayout.EndHorizontal();
+                Color color;
+                if(!ColorUtility.TryParseHtmlString(colorInput,out color))color=Color.white;
+                float red=GUILayout.HorizontalSlider(color.r,0,1);
+                float green=GUILayout.HorizontalSlider(color.g,0,1);
+                float blue=GUILayout.HorizontalSlider(color.b,0,1);
+                GUILayout.Label("R: "+Mathf.RoundToInt(red*255)+"   G: "+Mathf.RoundToInt(green*255)+"   B: "+Mathf.RoundToInt(blue*255));
+                if(!Mathf.Approximately(red,color.r)||!Mathf.Approximately(green,color.g)||!Mathf.Approximately(blue,color.b))
+                    ApplyColor("#"+ColorUtility.ToHtmlStringRGB(new Color(red,green,blue)));
+                Color old=GUI.backgroundColor;GUI.backgroundColor=color;
+                GUILayout.Box("Aktuális szín",GUILayout.Height(42),GUILayout.ExpandWidth(true));
+                GUI.backgroundColor=old;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("RAL kód",GUILayout.Width(70));
+                ralInput=GUILayout.TextField(ralInput);
+                if(GUILayout.Button("RAL keresés",GUILayout.Width(100)))
+                {
+                    string code=ralInput.Trim().ToUpperInvariant().Replace(" ","");
+                    var match=CabinetAppearanceLibrary.Presets.FirstOrDefault(s=>s.Name.Replace(" ","").ToUpperInvariant().StartsWith(code));
+                    if(!string.IsNullOrEmpty(match.Hex))ApplyColor(match.Hex,match.Name);
+                    else error="Ez a RAL kód nincs a beépített palettában; HEX/RGB szabadon megadható.";
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.Label("Választható RAL és alapszínek (képernyős közelítések):");
+                paletteScroll=GUILayout.BeginScrollView(paletteScroll,GUILayout.Height(Mathf.Min(205,rect.height*.37f)));
+                foreach(var swatch in CabinetAppearanceLibrary.Presets)
+                {
+                    Color sw;ColorUtility.TryParseHtmlString(swatch.Hex,out sw);
+                    GUILayout.BeginHorizontal();
+                    Color prev=GUI.backgroundColor;GUI.backgroundColor=sw;
+                    if(GUILayout.Button("      ",GUILayout.Width(70)))ApplyColor(swatch.Hex,swatch.Name);
+                    GUI.backgroundColor=prev;
+                    if(GUILayout.Button(swatch.Name+"  "+swatch.Hex))ApplyColor(swatch.Hex,swatch.Name);
+                    GUILayout.EndHorizontal();
+                }
+                GUILayout.EndScrollView();
+            }
+            if(GUILayout.Button("Bezárás"))colorPopup=false;
+            GUILayout.EndArea();
+        }
+        void SelectTexture(string id)
+        {
+            if(editingMaterial<0||editingMaterial>=document.Materials.Count)return;
+            document.Materials[editingMaterial].Texture=id;
+            dirty=true;Rebuild();texturePopup=false;
+        }
+        void DrawTexturePopup()
+        {
+            var rect=new Rect(Mathf.Max(5,(Screen.width-600)*.5f),Mathf.Max(5,(Screen.height-550)*.5f),
+                Mathf.Min(600,Screen.width-10),Mathf.Min(550,Screen.height-10));
+            GUI.Box(rect,"Textúraválasztó");
+            GUILayout.BeginArea(new Rect(rect.x+12,rect.y+30,rect.width-24,rect.height-42));
+            if(GUILayout.Button("Textúra nélkül",GUILayout.Height(28)))SelectTexture("");
+            GUILayout.Label("A projektben lévő és korábban importált textúrák:");
+            textureScroll=GUILayout.BeginScrollView(textureScroll,GUILayout.Height(Mathf.Min(285,rect.height*.52f)));
+            foreach(string resource in CabinetAppearanceLibrary.ResourceTextures())
+                TextureChoice("resource:"+resource,resource);
+            foreach(string imported in CabinetAppearanceLibrary.ImportedTextures())
+                TextureChoice("imported:"+imported,imported);
+            GUILayout.EndScrollView();
+            GUILayout.Label("Új PNG/JPG textúra feltöltése helyi fájlból:");
+            GUILayout.BeginHorizontal();
+            textureSource=GUILayout.TextField(textureSource);
+            if(GUILayout.Button("Tallózás",GUILayout.Width(85)))BrowseTexture();
+            GUILayout.EndHorizontal();
+            if(GUILayout.Button("Fájl importálása és kiválasztása"))
+            {
+                try{SelectTexture(CabinetAppearanceLibrary.Import(textureSource));}
+                catch(Exception ex){error=ex.Message;}
+            }
+            if(GUILayout.Button("Bezárás"))texturePopup=false;
+            GUILayout.EndArea();
+        }
+        void TextureChoice(string id,string name)
+        {
+            GUILayout.BeginHorizontal();
+            Texture2D texture;
+            if(!textureCache.TryGetValue(id,out texture))
+            {texture=CabinetAppearanceLibrary.Load(id);textureCache[id]=texture;}
+            if(texture!=null)GUILayout.Label(texture,GUILayout.Width(48),GUILayout.Height(40));
+            if(GUILayout.Button(name,GUILayout.Height(40)))SelectTexture(id);
+            GUILayout.EndHorizontal();
+        }
+        void BrowseTexture()
+        {
+#if UNITY_EDITOR
+            textureSource=UnityEditor.EditorUtility.OpenFilePanel("Textúra kiválasztása","","png,jpg,jpeg");
+#elif UNITY_STANDALONE_WIN
+            // File dialog is asynchronous so the render loop remains responsive.
+            var thread=new System.Threading.Thread(()=>{
+                try
+                {
+                    var psi=new System.Diagnostics.ProcessStartInfo("powershell.exe",
+                        "-NoProfile -STA -Command \\"Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.OpenFileDialog; $d.Filter='Képek (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg'; if($d.ShowDialog() -eq 'OK') {[Console]::Write($d.FileName)}\\"");
+                    psi.UseShellExecute=false;psi.RedirectStandardOutput=true;psi.CreateNoWindow=true;
+                    using(var process=System.Diagnostics.Process.Start(psi))
+                    {
+                        var path=process.StandardOutput.ReadToEnd().Trim();process.WaitForExit();
+                        if(!string.IsNullOrEmpty(path))pendingTexturePath=path;
+                    }
+                }
+                catch(Exception ex){pendingTextureError=ex.Message;}
+            });
+            thread.IsBackground=true;thread.SetApartmentState(System.Threading.ApartmentState.STA);thread.Start();
+#else
+            error="A tallózás Windows buildben és Unity Editorban érhető el; add meg a fájl útvonalát.";
+#endif
+        }
+        volatile string pendingTexturePath,pendingTextureError;
+        void Update()
+        {
+            if(pendingTexturePath!=null){textureSource=pendingTexturePath;pendingTexturePath=null;}
+            if(pendingTextureError!=null){error=pendingTextureError;pendingTextureError=null;}
         }
         string Field(string key,string label,string value)
         {
@@ -241,19 +410,38 @@ namespace BuildYourFurniture
             if(GUILayout.Button("+ Nevesített méret"))
             {document.Dimensions.Add(new CabinetDesignerDocument.Dimension{Id="size"+Guid.NewGuid().ToString("N").Substring(0,5),Name="Méret",Value=100});dirty=true;}
             GUILayout.Label("Színek");
-            foreach(var color in document.Colors)
+            for(int i=0;i<document.Colors.Count;i++)
             {
-                string next=Field("color"+color.Id,color.Name,color.Hex);
-                if(next!=color.Hex){color.Hex=next;dirty=true;Rebuild();}
+                var color=document.Colors[i];
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(color.Name,GUILayout.Width(105));
+                Color swatch;
+                if(!ColorUtility.TryParseHtmlString(color.Hex,out swatch))swatch=Color.magenta;
+                Color old=GUI.backgroundColor;GUI.backgroundColor=swatch;
+                if(GUILayout.Button("      ",GUILayout.Width(55),GUILayout.Height(26)))OpenColorPicker(i);
+                GUI.backgroundColor=old;
+                GUILayout.Label(color.Hex,GUILayout.Width(88));
+                if(GUILayout.Button("Színválasztó...",GUILayout.Width(115)))OpenColorPicker(i);
+                GUILayout.EndHorizontal();
             }
             if(GUILayout.Button("+ Szín"))
-            {document.Colors.Add(new CabinetDesignerDocument.PaletteColor{Id="color"+Guid.NewGuid().ToString("N").Substring(0,5),Name="Új szín",Hex="#FFFFFF"});dirty=true;}
-            GUILayout.Label("Anyagok");
-            foreach(var material in document.Materials)
             {
+                document.Colors.Add(new CabinetDesignerDocument.PaletteColor{
+                    Id="color"+Guid.NewGuid().ToString("N").Substring(0,5),Name="Új szín",Hex="#FFFFFF"});
+                dirty=true;OpenColorPicker(document.Colors.Count-1);
+            }
+            GUILayout.Label("Anyagok");
+            for(int i=0;i<document.Materials.Count;i++)
+            {
+                var material=document.Materials[i];
                 material.Name=Field("matname"+material.Id,material.Id,material.Name);
                 material.ColorId=Field("matcolor"+material.Id,"Szín ID",material.ColorId);
-                material.Texture=Field("mattex"+material.Id,"Textúra",material.Texture??"");
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Textúra",GUILayout.Width(100));
+                GUILayout.Label(string.IsNullOrEmpty(material.Texture)?"Nincs":material.Texture);
+                if(GUILayout.Button("Választás...",GUILayout.Width(100)))
+                {editingMaterial=i;texturePopup=true;colorPopup=false;}
+                GUILayout.EndHorizontal();
             }
             if(GUILayout.Button("+ Anyag"))
             {document.Materials.Add(new CabinetDesignerDocument.MaterialType{Id="material"+Guid.NewGuid().ToString("N").Substring(0,5),Name="Anyag",ColorId=document.Colors.FirstOrDefault()?.Id??""});dirty=true;}
