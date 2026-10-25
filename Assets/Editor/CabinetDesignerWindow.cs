@@ -1,0 +1,340 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+
+namespace BuildYourFurniture
+{
+    public sealed class CabinetDesignerWindow : EditorWindow
+    {
+        CabinetDesignerDocument document;
+        int selected=-1;
+        Vector2 scroll;
+        PreviewRenderUtility preview;
+        readonly List<GameObject> previewObjects=new List<GameObject>();
+        float orbit=35,tilt=25,distance=2.3f;
+        Vector2 mouseDown;
+        enum Mode { Move, Resize, Rotate, Orbit }
+        Mode mode=Mode.Move;
+        bool dirty;
+        [MenuItem("BuildYourFurniture/Szekrény készítő")]
+        public static void Open()=>GetWindow<CabinetDesignerWindow>("Szekrény készítő");
+        void OnEnable(){document=CabinetDesignerDocument.New();InitializePreview();}
+        void OnDisable(){DisposePreview();}
+        void InitializePreview()
+        {
+            if(preview!=null)return;
+            preview=new PreviewRenderUtility();
+            preview.cameraFieldOfView=35;
+            preview.camera.nearClipPlane=.01f;
+            preview.camera.farClipPlane=100;
+            preview.lights[0].intensity=1.2f;
+            preview.lights[0].transform.rotation=Quaternion.Euler(35,35,0);
+            preview.ambientColor=Color.gray;
+        }
+        void DisposePreview()
+        {
+            ClearObjects();
+            if(preview!=null){preview.Cleanup();preview=null;}
+        }
+        void ClearObjects()
+        {
+            foreach(var o in previewObjects)if(o!=null)DestroyImmediate(o);
+            previewObjects.Clear();
+        }
+        void Changed(){dirty=true;Repaint();}
+        void OnGUI()
+        {
+            if(document==null)document=CabinetDesignerDocument.New();
+            Toolbar();
+            Rect bounds=GUILayoutUtility.GetRect(0,10000,0,10000,GUILayout.ExpandWidth(true),GUILayout.ExpandHeight(true));
+            float left=Mathf.Clamp(bounds.width*.44f,300,520);
+            var inspector=new Rect(bounds.x,bounds.y,left,bounds.height);
+            var viewport=new Rect(bounds.x+left+4,bounds.y,bounds.width-left-4,bounds.height);
+            GUILayout.BeginArea(inspector,EditorStyles.helpBox);
+            scroll=EditorGUILayout.BeginScrollView(scroll);
+            Inspector();
+            EditorGUILayout.EndScrollView();
+            GUILayout.EndArea();
+            Preview(viewport);
+        }
+        void Toolbar()
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            if(GUILayout.Button("Új",EditorStyles.toolbarButton,GUILayout.Width(42)))NewDocument();
+            if(GUILayout.Button("Megnyitás",EditorStyles.toolbarButton,GUILayout.Width(78)))OpenDocument();
+            if(GUILayout.Button("Mentés",EditorStyles.toolbarButton,GUILayout.Width(65)))SaveDocument();
+            if(GUILayout.Button("Duplikálás",EditorStyles.toolbarButton,GUILayout.Width(85)))DuplicateDocument();
+            if(GUILayout.Button("Törlés",EditorStyles.toolbarButton,GUILayout.Width(55)))DeleteDocument();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(dirty?"● Nem mentett":"Mentve",EditorStyles.miniLabel);
+            EditorGUILayout.EndHorizontal();
+        }
+        bool ConfirmDiscard()=>!dirty||EditorUtility.DisplayDialog("Nem mentett változások",
+            "A jelenlegi szekrény módosításai elvesznek. Folytatod?","Igen","Mégse");
+        void NewDocument()
+        {
+            if(!ConfirmDiscard())return;
+            document=CabinetDesignerDocument.New();selected=-1;dirty=true;Repaint();
+        }
+        void OpenDocument()
+        {
+            if(!ConfirmDiscard())return;
+            var files=CabinetDesignerDocument.Files();
+            if(files.Length==0){EditorUtility.DisplayDialog("Szekrények","Még nincs mentett szekrény.","OK");return;}
+            var menu=new GenericMenu();
+            foreach(string file in files)
+            {
+                string captured=file;
+                string title;
+                try{title=CabinetDesignerDocument.Load(file).Name;}catch{title=Path.GetFileNameWithoutExtension(file);}
+                menu.AddItem(new GUIContent(title+" ("+Path.GetFileNameWithoutExtension(file)+")"),false,()=>{
+                    try{document=CabinetDesignerDocument.Load(captured);selected=-1;dirty=false;Repaint();}
+                    catch(Exception ex){EditorUtility.DisplayDialog("XML hiba",ex.Message,"OK");}
+                });
+            }
+            menu.ShowAsContext();
+        }
+        void SaveDocument()
+        {
+            try{document.Save();dirty=false;}
+            catch(Exception ex){EditorUtility.DisplayDialog("Mentési hiba",ex.Message,"OK");}
+        }
+        void DuplicateDocument()
+        {
+            document=CabinetDesignerDocument.FromXml(document.ToXml());
+            document.Id=Guid.NewGuid().ToString("N");document.Name+=" - másolat";
+            selected=-1;dirty=true;SaveDocument();
+        }
+        void DeleteDocument()
+        {
+            if(!EditorUtility.DisplayDialog("Szekrény törlése","Biztosan törlöd a mentett szekrényt?","Törlés","Mégse"))return;
+            CabinetDesignerDocument.Delete(document);
+            document=CabinetDesignerDocument.New();selected=-1;dirty=false;
+        }
+        void Inspector()
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.LabelField("Szekrény",EditorStyles.boldLabel);
+            document.Name=EditorGUILayout.TextField("Név",document.Name);
+            EditorGUILayout.SelectableLabel(document.Id,EditorStyles.textField,GUILayout.Height(19));
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("Nevesített méretek (mm)",EditorStyles.boldLabel);
+            for(int i=0;i<document.Dimensions.Count;i++)
+            {
+                var d=document.Dimensions[i];
+                EditorGUILayout.BeginHorizontal();
+                d.Id=EditorGUILayout.TextField(d.Id,GUILayout.Width(75));
+                d.Name=EditorGUILayout.TextField(d.Name);
+                d.Value=EditorGUILayout.FloatField(d.Value,GUILayout.Width(70));
+                if(GUILayout.Button("×",GUILayout.Width(22))){document.Dimensions.RemoveAt(i);Changed();break;}
+                EditorGUILayout.EndHorizontal();
+            }
+            if(GUILayout.Button("+ Méret")){document.Dimensions.Add(new CabinetDesignerDocument.Dimension{
+                Id="size"+(document.Dimensions.Count+1),Name="Új méret",Value=100});Changed();}
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("Színek",EditorStyles.boldLabel);
+            foreach(var color in document.Colors)
+            {
+                EditorGUILayout.BeginHorizontal();
+                color.Id=EditorGUILayout.TextField(color.Id,GUILayout.Width(90));
+                color.Name=EditorGUILayout.TextField(color.Name);
+                Color parsed;
+                if(!ColorUtility.TryParseHtmlString(color.Hex,out parsed))parsed=Color.white;
+                var updated=EditorGUILayout.ColorField(parsed,GUILayout.Width(75));
+                color.Hex="#"+ColorUtility.ToHtmlStringRGB(updated);
+                EditorGUILayout.EndHorizontal();
+            }
+            if(GUILayout.Button("+ Szín")){document.Colors.Add(new CabinetDesignerDocument.PaletteColor{
+                Id="color"+(document.Colors.Count+1),Name="Új szín",Hex="#FFFFFF"});Changed();}
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("Anyagok",EditorStyles.boldLabel);
+            foreach(var m in document.Materials)
+            {
+                m.Id=EditorGUILayout.TextField("Anyag ID",m.Id);
+                m.Name=EditorGUILayout.TextField("Elnevezés",m.Name);
+                m.ColorId=EditorGUILayout.TextField("Szín ID",m.ColorId);
+                m.Texture=EditorGUILayout.TextField("Textúra útvonal",m.Texture);
+            }
+            if(GUILayout.Button("+ Anyag")){document.Materials.Add(new CabinetDesignerDocument.MaterialType{
+                Id="material"+(document.Materials.Count+1),Name="Új anyag",ColorId=document.Colors.FirstOrDefault()?.Id??""});Changed();}
+            EditorGUILayout.Space(10);
+            EditorGUILayout.LabelField("Elemek",EditorStyles.boldLabel);
+            for(int i=0;i<document.Elements.Count;i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                if(GUILayout.Toggle(selected==i,document.Elements[i].Name+" ["+document.Elements[i].Kind+"]","Button"))
+                    selected=i;
+                if(GUILayout.Button("×",GUILayout.Width(24))){document.Elements.RemoveAt(i);selected=-1;Changed();break;}
+                EditorGUILayout.EndHorizontal();
+            }
+            EditorGUILayout.BeginHorizontal();
+            if(GUILayout.Button("+ Bútorlap"))
+            {
+                var p=CabinetDesignerDocument.PanelElement.Rectangle();
+                p.Name="Bútorlap "+(document.Elements.Count+1);
+                document.Elements.Add(p);selected=document.Elements.Count-1;Changed();
+            }
+            using(new EditorGUI.DisabledScope(selected<0||selected>=document.Elements.Count))
+                if(GUILayout.Button("Elem duplikálása"))
+                {
+                    document.Elements.Insert(selected+1,document.Elements[selected].Clone());selected++;Changed();
+                }
+            EditorGUILayout.EndHorizontal();
+            if(selected>=0&&selected<document.Elements.Count)PanelInspector(document.Elements[selected]);
+            if(EditorGUI.EndChangeCheck())Changed();
+        }
+        void PanelInspector(CabinetDesignerDocument.PanelElement p)
+        {
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("Kijelölt bútorlap",EditorStyles.boldLabel);
+            p.Name=EditorGUILayout.TextField("Név",p.Name);
+            EditorGUILayout.SelectableLabel(p.Id,EditorStyles.textField,GUILayout.Height(19));
+            p.MaterialId=EditorGUILayout.TextField("Anyag ID",p.MaterialId);
+            p.Position=EditorGUILayout.Vector3Field("Pozíció (mm)",p.Position);
+            p.Rotation=EditorGUILayout.Vector3Field("Forgatás (°)",p.Rotation);
+            p.Thickness=Mathf.Max(.1f,EditorGUILayout.FloatField("Vastagság (mm)",p.Thickness));
+            EditorGUILayout.LabelField("Kész körvonal pontjai (mm)",EditorStyles.boldLabel);
+            for(int i=0;i<p.Outline.Count;i++)
+            {
+                var vertex=p.Outline[i];
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label(vertex.Id,GUILayout.Width(30));
+                vertex.Point=EditorGUILayout.Vector2Field("",vertex.Point);
+                if(p.Outline.Count>3&&GUILayout.Button("×",GUILayout.Width(24)))
+                {p.Bands.Remove(vertex.Id);p.Outline.RemoveAt(i);Changed();break;}
+                EditorGUILayout.EndHorizontal();
+            }
+            if(GUILayout.Button("+ Körvonalpont"))
+            {
+                p.Outline.Add(new CabinetDesignerDocument.Vertex{Id="P"+(p.Outline.Count+1)+"_"+Guid.NewGuid().ToString("N").Substring(0,4),
+                    Point=p.Outline.Last().Point+new Vector2(50,50)});Changed();
+            }
+            EditorGUILayout.LabelField("Élfólia (mm) – az él kezdőpontja szerint",EditorStyles.boldLabel);
+            foreach(var vertex in p.Outline)
+            {
+                float value=p.Bands.ContainsKey(vertex.Id)?p.Bands[vertex.Id]:0;
+                p.Bands[vertex.Id]=Mathf.Max(0,EditorGUILayout.FloatField(vertex.Id+" → következő",value));
+            }
+            try
+            {
+                var raw=CabinetDesignerDocument.RawOutline(p);
+                EditorGUILayout.HelpBox("Kész méret állandó. Szabáskoordináták: "+
+                    string.Join("; ",raw.Select(v=>"("+v.x.ToString("0.##")+","+v.y.ToString("0.##")+")").ToArray()),MessageType.Info);
+            }
+            catch(Exception ex){EditorGUILayout.HelpBox(ex.Message,MessageType.Warning);}
+        }
+        Color ElementColor(CabinetDesignerDocument.PanelElement p)
+        {
+            var m=document.Materials.FirstOrDefault(x=>x.Id==p.MaterialId);
+            var color=document.Colors.FirstOrDefault(x=>x.Id==m?.ColorId);
+            Color parsed;
+            return ColorUtility.TryParseHtmlString(color?.Hex??"#BFA17A",out parsed)?parsed:Color.gray;
+        }
+        void RebuildPreview()
+        {
+            ClearObjects();
+            foreach(var p in document.Elements)
+            {
+                if(p.Outline.Count<3)continue;
+                try
+                {
+                    var finished=p.Outline.Select(v=>v.Point*.001f).ToList();
+                    // Mesh is always the FINISHED solid. Edge banding changes the core cut contour, not the outside.
+                    var go=LShapePanelMesh.Create(p.Name,finished,p.Thickness*.001f,
+                        p.Position*.001f,0,ElementColor(p));
+                    go.transform.rotation=Quaternion.Euler(p.Rotation);
+                    previewObjects.Add(go);
+                    preview.AddSingleGO(go);
+                }
+                catch(Exception ex){Debug.LogWarning("Cabinet preview "+p.Name+": "+ex.Message);}
+            }
+        }
+        void Preview(Rect rect)
+        {
+            GUI.Box(rect,GUIContent.none);
+            Rect tools=new Rect(rect.x+8,rect.y+8,rect.width-16,23);
+            GUILayout.BeginArea(tools);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            foreach(Mode m in Enum.GetValues(typeof(Mode)))
+                if(GUILayout.Toggle(mode==m,m.ToString(),"Button",GUILayout.Width(65)))mode=m;
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("Bal egér: kijelölés / módosítás · Jobb egér: kamera",EditorStyles.miniLabel);
+            EditorGUILayout.EndHorizontal();
+            GUILayout.EndArea();
+            Rect view=new Rect(rect.x+4,rect.y+38,rect.width-8,rect.height-42);
+            if(view.width<10||view.height<10)return;
+            var ev=Event.current;
+            if(view.Contains(ev.mousePosition))
+            {
+                if(ev.type==EventType.ScrollWheel){distance=Mathf.Clamp(distance+ev.delta.y*.12f,.3f,12);ev.Use();Repaint();}
+                if(ev.type==EventType.MouseDown){mouseDown=ev.mousePosition;if(ev.button==0)SelectAt(view,ev.mousePosition);ev.Use();}
+                if(ev.type==EventType.MouseDrag)
+                {
+                    Vector2 delta=ev.mousePosition-mouseDown;mouseDown=ev.mousePosition;
+                    if(ev.button==1||mode==Mode.Orbit)
+                    {orbit+=delta.x*.45f;tilt=Mathf.Clamp(tilt-delta.y*.45f,-80,80);}
+                    else if(ev.button==0&&selected>=0&&selected<document.Elements.Count)
+                    {
+                        var p=document.Elements[selected];
+                        if(mode==Mode.Move)p.Position+=new Vector3(delta.x*distance*.8f,0,-delta.y*distance*.8f);
+                        if(mode==Mode.Rotate)p.Rotation+=new Vector3(0,delta.x*.6f,0);
+                        if(mode==Mode.Resize)
+                        {
+                            float scale=Mathf.Clamp(1+delta.x*.006f,.05f,20);
+                            Vector2 pivot=p.Outline[0].Point;
+                            foreach(var vertex in p.Outline)vertex.Point=pivot+(vertex.Point-pivot)*scale;
+                        }
+                        Changed();
+                    }
+                    ev.Use();Repaint();
+                }
+            }
+            if(ev.type!=EventType.Repaint)return;
+            InitializePreview();
+            RebuildPreview();
+            preview.BeginPreview(view,GUIStyle.none);
+            var cam=preview.camera;
+            Vector3 center=Vector3.zero;
+            if(document.Elements.Count>0)center=document.Elements.Aggregate(Vector3.zero,(sum,p)=>sum+p.Position)/(document.Elements.Count*1000f);
+            var orientation=Quaternion.Euler(tilt,orbit,0);
+            cam.transform.position=center+orientation*new Vector3(0,0,-distance);
+            cam.transform.LookAt(center);
+            cam.clearFlags=CameraClearFlags.SolidColor;
+            cam.backgroundColor=new Color(.15f,.17f,.20f);
+            cam.Render();
+            var texture=preview.EndPreview();
+            GUI.DrawTexture(view,texture,ScaleMode.StretchToFill,false);
+            if(selected>=0&&selected<document.Elements.Count)
+                GUI.Label(new Rect(view.x+8,view.y+8,view.width-16,20),
+                    "Kijelölve: "+document.Elements[selected].Name,EditorStyles.whiteLabel);
+        }
+        void SelectAt(Rect view,Vector2 mouse)
+        {
+            // Hit-test against the current preview's mesh colliders.
+            if(preview==null)return;
+            var cam=preview.camera;
+            float u=(mouse.x-view.x)/view.width;
+            float v=1-(mouse.y-view.y)/view.height;
+            var ray=cam.ViewportPointToRay(new Vector3(u,v,0));
+            float nearest=float.MaxValue;int found=-1;
+            for(int i=0;i<previewObjects.Count;i++)
+            {
+                var collider=previewObjects[i].GetComponent<MeshCollider>();
+                RaycastHit hit;
+                if(collider!=null&&collider.Raycast(ray,out hit,100)&&hit.distance<nearest)
+                {nearest=hit.distance;found=i;}
+            }
+            if(found>=0)
+            {
+                var item=previewObjects[found];
+                selected=document.Elements.FindIndex(p=>p.Name==item.name);
+                Repaint();
+            }
+        }
+    }
+}
+#endif
