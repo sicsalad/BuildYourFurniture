@@ -55,6 +55,7 @@ namespace BuildYourFurniture
                 Texture2D texture = Resources.Load<Texture2D>(S(finish, "texture", "Textures/helios"));
                 if (!texture) Debug.LogWarning("Floor texture missing: " + S(finish, "texture", "Textures/helios"));
                 Material tileMat = MakeMaterial(tileColor, texture, N(finish, "smoothness", .12f));
+                RemoteSurfaceTexture.Attach(tileMat,S(finish,"textureUrl"),register);
                 float mainMin = alongX ? minX : minZ, mainMax = alongX ? maxX : maxZ;
                 float crossMin = alongX ? minZ : minX, crossMax = alongX ? maxZ : maxX;
                 int row = 0;
