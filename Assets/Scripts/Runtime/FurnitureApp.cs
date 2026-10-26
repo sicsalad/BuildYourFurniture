@@ -147,38 +147,33 @@ namespace BuildYourFurniture
                 SyncCameraAngles();
             }
         }
+        bool addMenuOpen;
+        bool furnitureResizeMode;
+        readonly string[] addKinds={"Gardrób / szekrény","Íróasztal","Franciaágy","Kanapé","TV-állvány","LED TV","Térelválasztó polc","Étkezőasztal","Dohányzóasztal","Szőnyeg"};
         void DrawCabinetVisibilityMenu()
         {
-            float barHeight=Screen.height*.10f;
+            float barHeight=Mathf.Max(48,Screen.height*.085f);
             GUI.Box(new Rect(0,0,Screen.width,barHeight),"");
-            float buttonWidth=Mathf.Min(260,Screen.width*.28f);
-            if(GUI.Button(new Rect(14,8,buttonWidth,Mathf.Max(30,barHeight-16)),
-                cabinetVisibilityOpen?"Szekrények ▲":"Szekrények ▼"))
-                cabinetVisibilityOpen=!cabinetVisibilityOpen;
-            if(GUI.Button(new Rect(Mathf.Min(Screen.width-220,290),8,190,Mathf.Max(30,barHeight-16)),sofaEditorOpen?"Kanapé ▲":"Kanapé hozzáadás / szerkesztés"))sofaEditorOpen=!sofaEditorOpen;
-            if(sofaEditorOpen)DrawSofaEditor(barHeight);
-            if(GUI.Button(new Rect(490,8,195,Mathf.Max(30,barHeight-16)),deskEditorOpen?"Íróasztal ▲":"Íróasztal + 2 monitor"))deskEditorOpen=!deskEditorOpen;
-            if(deskEditorOpen)DrawDeskEditor(barHeight);
-            if(GUI.Button(new Rect(695,8,160,Mathf.Max(30,barHeight-16)),bedEditorOpen?"Franciaágy ▲":"Franciaágy +"))bedEditorOpen=!bedEditorOpen;
-            if(bedEditorOpen)DrawBedEditor(barHeight);
-            if(GUI.Button(new Rect(865,8,155,Mathf.Max(30,barHeight-16)),tvStandEditorOpen?"TV-állvány ▲":"TV-állvány +"))tvStandEditorOpen=!tvStandEditorOpen;
-            if(tvStandEditorOpen)DrawTvStandEditor(barHeight);
-            if(GUI.Button(new Rect(1030,8,150,Mathf.Max(30,barHeight-16)),ledTvEditorOpen?"LED TV ▲":"LED TV +"))ledTvEditorOpen=!ledTvEditorOpen;
-            if(ledTvEditorOpen)DrawLedTvEditor(barHeight);
-            if(GUI.Button(new Rect(1190,8,140,Mathf.Max(30,barHeight-16)),rugEditorOpen?"Szőnyeg ▲":"Szőnyeg +"))rugEditorOpen=!rugEditorOpen;
-            if(rugEditorOpen)DrawRugEditor(barHeight);
-            if(GUI.Button(new Rect(1340,8,175,Mathf.Max(30,barHeight-16)),dividerEditorOpen?"Térelválasztó ▲":"Térelválasztó +"))dividerEditorOpen=!dividerEditorOpen;
-            if(dividerEditorOpen)DrawDividerEditor(barHeight);
-            if(GUI.Button(new Rect(1525,8,140,Mathf.Max(30,barHeight-16)),tableEditorOpen?"Asztalok ▲":"Asztalok +"))tableEditorOpen=!tableEditorOpen;
-            if(tableEditorOpen)DrawTableEditor(barHeight);
-            if(GUI.Button(new Rect(1675,8,170,Mathf.Max(30,barHeight-16)),wardrobeEditorOpen?"Gardrób ▲":"Tükrös gardrób +"))wardrobeEditorOpen=!wardrobeEditorOpen;
-            if(wardrobeEditorOpen)DrawWardrobeEditor(barHeight);
-            if(GUI.Button(new Rect(1855,8,140,Mathf.Max(30,barHeight-16)),laminateEditorOpen?"Laminált ▲":"Laminált +"))laminateEditorOpen=!laminateEditorOpen;
-            if(laminateEditorOpen)DrawLaminateEditor(barHeight);
-            if(GUI.Button(new Rect(2005,8,145,Mathf.Max(30,barHeight-16)),deleteModelsOpen?"Törlés ▲":"Modellek törlése"))deleteModelsOpen=!deleteModelsOpen;
-            if(deleteModelsOpen)DrawModelDeletion(barHeight);
-            DrawSelectedFurniture(barHeight);
-            if(GUI.Button(new Rect(Mathf.Max(10,Screen.width-535),8,165,Mathf.Max(30,barHeight-16)),"Belépés szobába ▼"))roomNavigationOpen=!roomNavigationOpen;
+            if(GUI.Button(new Rect(12,8,140,barHeight-16),addMenuOpen?"Bezárás":"+ Hozzáadás"))
+            {addMenuOpen=!addMenuOpen;roomNavigationOpen=false;}
+            if(GUI.Button(new Rect(162,8,155,barHeight-16),furnitureResizeMode?"Méretezés":"Mozgatás"))
+                furnitureResizeMode=!furnitureResizeMode;
+            if(GUI.Button(new Rect(Mathf.Max(325,Screen.width-525),8,165,barHeight-16),"Belépés szobába"))
+            {roomNavigationOpen=!roomNavigationOpen;addMenuOpen=false;}
+            if(GUI.Button(new Rect(Mathf.Max(500,Screen.width-350),8,165,barHeight-16),"Teljes alaprajz"))
+                SetApartmentOverview(true);
+            if(GUI.Button(new Rect(Mathf.Max(675,Screen.width-175),8,165,barHeight-16),"Konyha nézet"))
+                SetApartmentOverview(false);
+            if(addMenuOpen)
+            {
+                float panelHeight=Mathf.Min(Screen.height-barHeight-45,addKinds.Length*38+45);
+                GUI.Box(new Rect(12,barHeight+4,280,panelHeight),"Bútor hozzáadása");
+                GUILayout.BeginArea(new Rect(20,barHeight+30,264,panelHeight-35));
+                for(int i=0;i<addKinds.Length;i++)
+                    if(GUILayout.Button("+ "+addKinds[i],GUILayout.Height(33)))
+                    {AddFurnitureKind(i);addMenuOpen=false;break;}
+                GUILayout.EndArea();
+            }
             if(roomNavigationOpen)
             {
                 var rooms=plan?.Root?.Element("rooms");
@@ -187,39 +182,41 @@ namespace BuildYourFurniture
                     int index=0;
                     foreach(var room in rooms.Elements("room"))
                     {
-                        var selectedRoom=room;
-                        if(GUI.Button(new Rect(Mathf.Max(10,Screen.width-535),barHeight+8+index*38,165,34),S(room,"name",S(room,"id"))))
-                            EnterRoom(selectedRoom);
+                        var chosen=room;
+                        if(GUI.Button(new Rect(Mathf.Max(325,Screen.width-525),barHeight+5+index*38,165,34),S(room,"name",S(room,"id"))))
+                            EnterRoom(chosen);
                         index++;
                     }
                 }
             }
-            if(GUI.Button(new Rect(Mathf.Max(10,Screen.width-355),8,165,Mathf.Max(30,barHeight-16)),"Teljes alaprajz"))SetApartmentOverview(true);
-            if(GUI.Button(new Rect(Mathf.Max(180,Screen.width-185),8,165,Mathf.Max(30,barHeight-16)),"Konyha nézet"))SetApartmentOverview(false);
-            if(!cabinetVisibilityOpen)return;
-            var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
-            if(cabinets==null)return;
-            float itemHeight=35f;
-            float panelHeight=Mathf.Min(Screen.height*.65f,cabinets.Count*itemHeight+22);
-            var panel=new Rect(14,barHeight,Mathf.Max(290,buttonWidth),panelHeight);
-            GUI.Box(panel,"");
-            GUILayout.BeginArea(new Rect(panel.x+8,panel.y+8,panel.width-16,panel.height-16));
-            cabinetVisibilityScroll=GUILayout.BeginScrollView(cabinetVisibilityScroll);
-            foreach(var cabinet in cabinets)
-            {
-                string id=S(cabinet,"id");
-                bool currentValue;
-                if(!cabinetVisibility.TryGetValue(id,out currentValue))currentValue=true;
-                bool next=GUILayout.Toggle(currentValue,id+" – "+S(cabinet,"name"),GUILayout.Height(itemHeight));
-                if(next!=currentValue)
-                {
-                    cabinetVisibility[id]=next;
-                    SaveCabinetVisibility();
-                    RefreshViewerGeometry();
-                }
-            }
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+            if(!addMenuOpen)DrawSelectedFurniture(barHeight);
+        }
+        void AddFurnitureKind(int kind)
+        {
+            if(plan==null)return;
+            string[] groups={"mirroredWardrobes","standingDesks","doubleBeds","sofas","tvStands","ledTvs","dividerShelves","tables","tables","rugs"};
+            string[] tags={"wardrobe","desk","bed","sofa","stand","tv","shelf","table","table","rug"};
+            string[] prefixes={"WARD","DESK","BED","S","TV","LED","DIV","TABLE","TABLE","RUG"};
+            if(kind<0||kind>=groups.Length)return;
+            var group=plan.Root.Element(groups[kind]);
+            if(group==null){group=new XElement(groups[kind]);plan.Root.Add(group);}
+            int id=1;
+            while(group.Elements().Any(e=>S(e,"id")==prefixes[kind]+id))id++;
+            var item=new XElement(tags[kind],new XAttribute("id",prefixes[kind]+id),
+                new XAttribute("x",0),new XAttribute("y",0),new XAttribute("rotation",0));
+            int[] widths={1000,1200,1400,1400,1400,1210,1400,1200,1200,1600};
+            int[] depths={450,700,2000,850,420,80,350,800,800,2400};
+            int[] heights={1850,740,950,850,500,700,1600,750,450,12};
+            item.SetAttributeValue("width",widths[kind]);
+            item.SetAttributeValue(kind==2?"length":"depth",depths[kind]);
+            item.SetAttributeValue(kind==9?"thickness":"height",heights[kind]);
+            if(kind==0){item.SetAttributeValue("leftMirror",1);item.SetAttributeValue("rightMirror",1);}
+            if(kind==2){item.SetAttributeValue("frameHeight",350);item.SetAttributeValue("headboardHeight",950);}
+            if(kind==5){item.SetAttributeValue("inches",54);item.SetAttributeValue("bottomHeight",900);}
+            if(kind==7||kind==8)
+            {item.SetAttributeValue("kind",kind==7?"dining":"coffee");item.SetAttributeValue("shape",0);item.SetAttributeValue("style",0);}
+            group.Add(item);
+            if(AddFurnitureToActiveRoom(item)){SaveLaminates();RefreshViewerGeometry();}
         }
         void SaveSofas()
         {
