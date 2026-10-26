@@ -38,6 +38,8 @@ namespace BuildYourFurniture
         bool bedEditorOpen;
         bool tvStandEditorOpen;
         bool ledTvEditorOpen;
+        bool rugEditorOpen;
+        Vector2 rugEditorScroll;
         Vector2 ledTvEditorScroll;
         Vector2 tvStandEditorScroll;
         Vector2 bedEditorScroll;
@@ -134,6 +136,8 @@ namespace BuildYourFurniture
             if(tvStandEditorOpen)DrawTvStandEditor(barHeight);
             if(GUI.Button(new Rect(1030,8,150,Mathf.Max(30,barHeight-16)),ledTvEditorOpen?"LED TV ▲":"LED TV +"))ledTvEditorOpen=!ledTvEditorOpen;
             if(ledTvEditorOpen)DrawLedTvEditor(barHeight);
+            if(GUI.Button(new Rect(1190,8,140,Mathf.Max(30,barHeight-16)),rugEditorOpen?"Szőnyeg ▲":"Szőnyeg +"))rugEditorOpen=!rugEditorOpen;
+            if(rugEditorOpen)DrawRugEditor(barHeight);
             if(!cabinetVisibilityOpen)return;
             var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
             if(cabinets==null)return;
@@ -937,6 +941,7 @@ namespace BuildYourFurniture
             DoubleBedRenderer.Build(renderPlan, element=>geometry.Add(element));
             TvStandRenderer.Build(renderPlan, element=>geometry.Add(element));
             LedTvRenderer.Build(renderPlan, element=>geometry.Add(element));
+            RugRenderer.Build(renderPlan, element=>geometry.Add(element));
             PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
