@@ -249,6 +249,91 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawRugEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Szőnyegek a tervben");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            rugEditorScroll=GUILayout.BeginScrollView(rugEditorScroll);
+            if(plan!=null)
+            {
+                var rugs=plan.Root.Element("rugs");
+                if(rugs==null){rugs=new XElement("rugs");plan.Root.Add(rugs);}
+                if(GUILayout.Button("+ Szőnyeg (160 × 240 cm)",GUILayout.Height(34)))
+                {
+                    int id=1;
+                    while(rugs.Elements("rug").Any(e=>S(e,"id")=="RUG"+id))id++;
+                    rugs.Add(new XElement("rug",new XAttribute("id","RUG"+id),
+                        new XAttribute("width","1600"),new XAttribute("length","2400"),
+                        new XAttribute("thickness","12"),new XAttribute("x","500"),
+                        new XAttribute("y","500"),new XAttribute("rotation","0"),
+                        new XAttribute("pattern","0"),new XAttribute("color",RugRenderer.Colors[0])));
+                    SaveRugs();RefreshViewerGeometry();
+                }
+                foreach(var rug in rugs.Elements("rug").ToList())
+                {
+                    GUILayout.Label("Szőnyeg "+S(rug,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(string property in new[]{"width","length","thickness","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        string label=property=="width"?"Szélesség (mm)":
+                            property=="length"?"Hosszúság (mm)":
+                            property=="thickness"?"Vastagság (mm)":
+                            property=="x"?"X pozíció (mm)":property=="y"?"Y pozíció (mm)":"Forgatás (°)";
+                        GUILayout.Label(label,GUILayout.Width(155));
+                        string oldValue=S(rug,property,"0");
+                        string next=GUILayout.TextField(oldValue);
+                        float parsed;
+                        if(next!=oldValue&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out parsed))
+                        {
+                            if(property=="width"||property=="length")parsed=Mathf.Max(200,parsed);
+                            if(property=="thickness")parsed=Mathf.Clamp(parsed,3,40);
+                            rug.SetAttributeValue(property,SofaNumber(parsed));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Szín (HEX)",GUILayout.Width(155));
+                    string oldColor=S(rug,"color",RugRenderer.Colors[0]);
+                    string newColor=GUILayout.TextField(oldColor);
+                    Color parsedColor;
+                    if(newColor!=oldColor&&ColorUtility.TryParseHtmlString(newColor,out parsedColor))
+                    {rug.SetAttributeValue("color",newColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Szőnyegminták (10)");
+                    int selected=Mathf.Clamp(Mathf.RoundToInt(N(rug,"pattern",0)),0,RugRenderer.Patterns.Length-1);
+                    for(int i=0;i<RugRenderer.Patterns.Length;i++)
+                    {
+                        if(GUILayout.Toggle(i==selected,RugRenderer.Patterns[i],"Button")&&i!=selected)
+                        {rug.SetAttributeValue("pattern",i);rug.SetAttributeValue("color",RugRenderer.Colors[i]);selected=i;changed=true;}
+                    }
+                    if(GUILayout.Button("Szőnyeg törlése")){rug.Remove();changed=true;}
+                    if(changed){SaveRugs();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveRugs()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Szőnyeg mentve a tervbe.";
+            }
+            catch(Exception ex){status="Szőnyeg mentési hiba: "+ex.Message;}
+        }
         void DrawLedTvEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
