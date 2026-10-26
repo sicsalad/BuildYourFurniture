@@ -24,6 +24,7 @@ namespace BuildYourFurniture
         InputDevice controller;
         bool previousTrigger,previousMenu;
         int texturePage;
+        public bool OpenOnStart;
         bool texturesVisible;
         string[] textureIds;
         static readonly string[] fields={"x","y","z","rotation","width","depth","height"};
@@ -43,6 +44,7 @@ namespace BuildYourFurniture
             panel.gameObject.SetActive(false);
             controller=InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
             RefreshTextures();
+            if(OpenOnStart)OpenPanel();
         }
         public bool IsPanelOpen=>panel!=null&&panel.gameObject.activeSelf;
         public void OpenPanel()
