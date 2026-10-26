@@ -129,11 +129,23 @@ namespace BuildYourFurniture
         void RefreshViewerGeometry()
         {
             if(current!="viewer")return;
+            Vector3 previousPosition=worldCamera?worldCamera.transform.position:Vector3.zero;
+            Quaternion previousRotation=worldCamera?worldCamera.transform.rotation:Quaternion.identity;
+            bool previousOrthographic=worldCamera&&worldCamera.orthographic;
+            float previousSize=worldCamera?worldCamera.orthographicSize:5f;
             foreach(var g in geometry)if(g)Destroy(g);
             geometry.Clear();
             if(worldCamera)Destroy(worldCamera.gameObject);
             worldCamera=null;
             BuildGeometry();
+            if(worldCamera)
+            {
+                worldCamera.transform.position=previousPosition;
+                worldCamera.transform.rotation=previousRotation;
+                worldCamera.orthographic=previousOrthographic;
+                worldCamera.orthographicSize=previousSize;
+                SyncCameraAngles();
+            }
         }
         void DrawCabinetVisibilityMenu()
         {
@@ -932,7 +944,7 @@ namespace BuildYourFurniture
                         new XAttribute("width",1400),new XAttribute("depth",420),new XAttribute("height",500),
                         new XAttribute("x",500),new XAttribute("y",500),new XAttribute("rotation",0),
                         new XAttribute("finish",0),new XAttribute("color",TvStandRenderer.Colors[0])));
-                    if(AddFurnitureToActiveRoom(stands.Elements("stand").Last())){SaveTvStands();RefreshViewerGeometry();}
+                    if(AddFurnitureToActiveRoom(collection.Elements("stand").Last())){SaveTvStands();RefreshViewerGeometry();}
                 }
                 foreach(var stand in collection.Elements("stand").ToList())
                 {
