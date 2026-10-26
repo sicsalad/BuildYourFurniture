@@ -54,11 +54,14 @@ namespace BuildYourFurniture
             {
                 string path=asset.Replace("\\","/");
                 if(path.StartsWith("Textures/",StringComparison.OrdinalIgnoreCase))path=path.Substring(9);
-                var loaded=Resources.Load<Texture2D>("Textures/"+path);
+                var loaded=CabinetAppearanceLibrary.Load(path)??Resources.Load<Texture2D>("Textures/"+path);
                 if(loaded!=null)texture=loaded;
             }
             material.color=Color.white;
             material.mainTexture=texture;
+            if(material.HasProperty("_Smoothness"))material.SetFloat("_Smoothness",.35f);
+            if(material.HasProperty("_Glossiness"))material.SetFloat("_Glossiness",.35f);
+            if(material.HasProperty("_Metallic"))material.SetFloat("_Metallic",0f);
             if(material.HasProperty("_BaseMap"))material.SetTexture("_BaseMap",texture);
             return material;
         }
@@ -86,6 +89,8 @@ namespace BuildYourFurniture
                 register(root);
                 var wood=new Material(Shader.Find("Universal Render Pipeline/Lit")??Shader.Find("Standard"));
                 wood.color=Color.white;
+                if(wood.HasProperty("_Smoothness"))wood.SetFloat("_Smoothness",.28f);
+                if(wood.HasProperty("_Glossiness"))wood.SetFloat("_Glossiness",.28f);
                 var texture=FinishTexture(finish,color);
                 wood.mainTexture=texture;
                 if(wood.HasProperty("_BaseMap"))wood.SetTexture("_BaseMap",texture);
