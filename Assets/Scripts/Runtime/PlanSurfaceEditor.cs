@@ -11,6 +11,7 @@ namespace BuildYourFurniture
         public bool Visible;
         int tab,selected;
         Vector2 scroll;
+        Action saveTextureChange;
         XElement copied;
         string copiedKind;
         static string S(XElement e,string key,string fallback="")=>(string)e?.Attribute(key)??fallback;
@@ -49,6 +50,7 @@ namespace BuildYourFurniture
         public void Draw(XDocument plan,Action saveAndRefresh)
         {
             if(!Visible||plan?.Root==null)return;
+            saveTextureChange=saveAndRefresh;
             float width=Mathf.Min(430,Screen.width*.43f);
             var rect=new Rect(Screen.width-width-8,56,width,Mathf.Max(120,Screen.height-65));
             GUI.Box(rect,"Felületek: falak / csempék / padlók");
@@ -145,7 +147,11 @@ namespace BuildYourFurniture
         {
             bool changed=false;
             GUILayout.Label("Textúra a projektből");
-            changed|=Choice(item,"texture",SurfaceTextureLibrary.Names.Concat(TextureNames()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
+            TexturePickerPopup.Button("Textúra választása",S(item,"texture"),id=>
+            {
+                item.SetAttributeValue("texture",id);
+                saveTextureChange?.Invoke();
+            });
             GUILayout.Label("Felület színe");
             changed|=ColorChoice(item,"color");
             float smooth=N(item,"smoothness",wall?.15f:.4f);
