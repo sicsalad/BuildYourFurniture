@@ -257,6 +257,110 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawTableEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-405),barHeight+5,395,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Étkező- és dohányzóasztalok");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            tableEditorScroll=GUILayout.BeginScrollView(tableEditorScroll);
+            if(plan!=null)
+            {
+                var tables=plan.Root.Element("tables");
+                if(tables==null){tables=new XElement("tables");plan.Root.Add(tables);}
+                foreach(string kind in new[]{"dining","coffee"})
+                {
+                    if(GUILayout.Button(kind=="dining"?"+ Étkezőasztal (120 cm)":"+ Dohányzóasztal (120 cm)",GUILayout.Height(30)))
+                    {
+                        int id=1;while(tables.Elements("table").Any(e=>S(e,"id")=="TABLE"+id))id++;
+                        tables.Add(new XElement("table",new XAttribute("id","TABLE"+id),
+                            new XAttribute("kind",kind),new XAttribute("shape","0"),
+                            new XAttribute("style","0"),new XAttribute("width","1200"),
+                            new XAttribute("depth","800"),new XAttribute("height",kind=="dining"?"750":"450"),
+                            new XAttribute("x","500"),new XAttribute("y","500"),
+                            new XAttribute("rotation","0"),new XAttribute("finish","0"),
+                            new XAttribute("color",TableRenderer.Colors[0])));
+                        SaveTables();RefreshViewerGeometry();
+                    }
+                }
+                foreach(var table in tables.Elements("table").ToList())
+                {
+                    GUILayout.Label("Asztal "+S(table,"id"),GUI.skin.box);
+                    bool changed=false;
+                    bool coffee=S(table,"kind","dining")=="coffee";
+                    bool nextCoffee=GUILayout.Toggle(coffee,"Dohányzóasztal (kikapcsolva: étkezőasztal)");
+                    if(nextCoffee!=coffee)
+                    {
+                        table.SetAttributeValue("kind",nextCoffee?"coffee":"dining");
+                        table.SetAttributeValue("height",nextCoffee?"450":"750");changed=true;
+                    }
+                    int shape=Mathf.Clamp(Mathf.RoundToInt(N(table,"shape",0)),0,2);
+                    GUILayout.Label("Forma");
+                    for(int i=0;i<TableRenderer.Shapes.Length;i++)
+                        if(GUILayout.Toggle(i==shape,TableRenderer.Shapes[i],"Button")&&i!=shape)
+                        {table.SetAttributeValue("shape",i);shape=i;changed=true;}
+                    int style=Mathf.Clamp(Mathf.RoundToInt(N(table,"style",0)),0,4);
+                    GUILayout.Label("Lábkialakítás – 5 modell");
+                    for(int i=0;i<TableRenderer.Styles.Length;i++)
+                        if(GUILayout.Toggle(i==style,TableRenderer.Styles[i],"Button")&&i!=style)
+                        {table.SetAttributeValue("style",i);style=i;changed=true;}
+                    foreach(string key in new[]{"width","depth","height","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        string label=key=="width"?"Szélesség / átmérő (mm)":
+                            key=="depth"?"Mélység (mm)":key=="height"?"Magasság (mm)":
+                            key=="x"?"X (mm)":key=="y"?"Y (mm)":"Forgatás (°)";
+                        GUILayout.Label(label,GUILayout.Width(185));
+                        string old=S(table,key,"0");
+                        string next=GUILayout.TextField(old);
+                        float value;
+                        if(next!=old&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out value))
+                        {
+                            if(key=="width"||key=="depth")value=Mathf.Max(400,value);
+                            if(key=="height")value=Mathf.Max(200,value);
+                            table.SetAttributeValue(key,SofaNumber(value));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    if(shape==1)GUILayout.Label("Kör esetén a mélység = átmérő.");
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Szín HEX",GUILayout.Width(185));
+                    string oldColor=S(table,"color",TableRenderer.Colors[0]);
+                    string newColor=GUILayout.TextField(oldColor);
+                    Color parsed;
+                    if(newColor!=oldColor&&ColorUtility.TryParseHtmlString(newColor,out parsed))
+                    {table.SetAttributeValue("color",newColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Asztallap textúra (10)");
+                    int finish=Mathf.Clamp(Mathf.RoundToInt(N(table,"finish",0)),0,9);
+                    for(int i=0;i<TableRenderer.Finishes.Length;i++)
+                        if(GUILayout.Toggle(i==finish,TableRenderer.Finishes[i],"Button")&&i!=finish)
+                        {table.SetAttributeValue("finish",i);table.SetAttributeValue("color",TableRenderer.Colors[i]);finish=i;changed=true;}
+                    if(GUILayout.Button("Asztal törlése")){table.Remove();changed=true;}
+                    if(changed){SaveTables();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveTables()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Asztalok mentve a tervbe.";
+            }
+            catch(Exception ex){status="Asztal mentési hiba: "+ex.Message;}
+        }
         void DrawDividerEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
