@@ -55,6 +55,9 @@ namespace BuildYourFurniture
                 Texture2D texture = Resources.Load<Texture2D>(S(finish, "texture", "Textures/helios"));
                 if (!texture) Debug.LogWarning("Floor texture missing: " + S(finish, "texture", "Textures/helios"));
                 Material tileMat = MakeMaterial(tileColor, texture, N(finish, "smoothness", .12f));
+                bool repeatTexture=S(finish,"textureMode","stretch")=="tile";
+                float textureUnit=Mathf.Max(50,N(finish,"textureSize",400))/1000f;
+                bool rotateTexture=N(finish,"textureRotation")>=45;
                 float mainMin = alongX ? minX : minZ, mainMax = alongX ? maxX : maxZ;
                 float crossMin = alongX ? minZ : minX, crossMax = alongX ? maxZ : maxX;
                 int row = 0;
@@ -81,6 +84,16 @@ namespace BuildYourFurniture
                         // UVs correspond to the uncut original tile, not the clipped fragment.
                         float u0 = (s0 - rawStart) / tileLong, u1 = (s1 - rawStart) / tileLong;
                         float v0 = (t0 - cross) / tileShort, v1 = (t1 - cross) / tileShort;
+                        if(repeatTexture)
+                        {
+                            u0*=tileLong/textureUnit;u1*=tileLong/textureUnit;
+                            v0*=tileShort/textureUnit;v1*=tileShort/textureUnit;
+                        }
+                        if(rotateTexture)
+                        {
+                            float oldU0=u0,oldU1=u1;
+                            u0=v0;u1=v1;v0=oldU0;v1=oldU1;
+                        }
                         AddQuad(S(finish, "id", "Floor") + "_" + row + "_" + col,
                             x0, x1, z0, z1, y, new Vector2(u0, v0), new Vector2(u1, v1),
                             tileMat, register, !alongX);
