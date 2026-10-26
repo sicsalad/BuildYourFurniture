@@ -20,6 +20,7 @@ namespace BuildYourFurniture
         readonly List<GameObject> elements=new List<GameObject>();
         readonly Dictionary<Collider,Action> actions=new Dictionary<Collider,Action>();
         Transform panel;
+        GameObject backdrop;
         InputDevice controller;
         bool previousTrigger,previousMenu;
         int texturePage;
@@ -33,6 +34,12 @@ namespace BuildYourFurniture
             panel.SetParent(transform,false);
             panel.localPosition=new Vector3(0,-.15f,1.05f);
             panel.localRotation=Quaternion.identity;
+            backdrop=GameObject.CreatePrimitive(PrimitiveType.Cube);
+            backdrop.name="Opaque VR property background";
+            backdrop.transform.SetParent(panel,false);
+            backdrop.transform.localPosition=new Vector3(0,0,.018f);
+            backdrop.transform.localScale=new Vector3(.79f,.82f,.025f);
+            backdrop.GetComponent<Renderer>().material.color=new Color(.055f,.075f,.095f,1f);
             panel.gameObject.SetActive(false);
             controller=InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
             RefreshTextures();
@@ -49,7 +56,7 @@ namespace BuildYourFurniture
         {
             var go=new GameObject("Label");
             go.transform.SetParent(panel,false);
-            go.transform.localPosition=new Vector3(x,y,-.012f);
+            go.transform.localPosition=new Vector3(x,y,-.065f);
             var label=go.AddComponent<TextMesh>();
             label.text=value;label.fontSize=48;label.characterSize=size;
             label.color=Color.white;
@@ -60,14 +67,14 @@ namespace BuildYourFurniture
             var go=GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name="VR button "+caption;
             go.transform.SetParent(panel,false);
-            go.transform.localPosition=new Vector3(x,y,-.018f);
+            go.transform.localPosition=new Vector3(x,y,-.055f);
             go.transform.localScale=new Vector3(width,.046f,.018f);
             go.GetComponent<Renderer>().material.color=new Color(.16f,.32f,.43f);
             actions[go.GetComponent<Collider>()]=action;
             elements.Add(go);
             var label=new GameObject("Caption");
             label.transform.SetParent(go.transform,false);
-            label.transform.localPosition=new Vector3(0,0,-.55f);
+            label.transform.localPosition=new Vector3(0,0,-.56f);
             label.transform.localScale=new Vector3(1f/width,1f/.046f,1f);
             var text=label.AddComponent<TextMesh>();
             text.text=caption;text.anchor=TextAnchor.MiddleCenter;text.alignment=TextAlignment.Center;
