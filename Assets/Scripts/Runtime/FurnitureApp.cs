@@ -33,6 +33,7 @@ namespace BuildYourFurniture
         readonly XmlDesignEditor xmlEditor = new XmlDesignEditor();
         Texture2D tileTexture;
         readonly PlanSurfaceEditor surfaceEditor=new PlanSurfaceEditor();
+        bool showSurfaceLabels;
         bool apartmentOverview=true;
         bool roomNavigationOpen;
         XElement selectedFurniture;
@@ -171,6 +172,9 @@ namespace BuildYourFurniture
             if(GUI.Button(new Rect(325,8,140,barHeight-16),
                 surfaceEditor.Visible?"Felületek bezárása":"Fal / padló / csempe"))
             {surfaceEditor.Visible=!surfaceEditor.Visible;addMenuOpen=false;}
+            if(GUI.Button(new Rect(472,8,125,barHeight-16),
+                showSurfaceLabels?"Felirat: BE":"Felirat: KI"))
+                showSurfaceLabels=!showSurfaceLabels;
             if(GUI.Button(new Rect(Mathf.Max(325,Screen.width-525),8,165,barHeight-16),"Belépés szobába"))
             {roomNavigationOpen=!roomNavigationOpen;addMenuOpen=false;}
             if(GUI.Button(new Rect(Mathf.Max(500,Screen.width-350),8,165,barHeight-16),"Teljes alaprajz"))
@@ -2062,6 +2066,7 @@ namespace BuildYourFurniture
         {
             var go = new GameObject("Viewer Camera",typeof(Camera),typeof(AudioListener));
             worldCamera=go.GetComponent<Camera>(); worldCamera.depth=0;
+            go.tag="MainCamera";
             go.transform.position=new Vector3(1.33f,2.8f,-4.5f);
             go.transform.LookAt(new Vector3(1.33f,1.1f,1.1f));
             if(apartmentOverview&&plan?.Root?.Element("rooms")?.Elements("room").Skip(1).Any()==true)ApplyApartmentOverview(worldCamera);
@@ -2415,12 +2420,41 @@ namespace BuildYourFurniture
             GUI.matrix=oldMatrix;
             GUI.color=oldColor;
         }
+        void DrawSurfaceLabels()
+        {
+            if(plan?.Root==null||worldCamera==null)return;
+            foreach(var wall in plan.Root.Element("walls")?.Elements("wall")??Enumerable.Empty<XElement>())
+            {
+                Vector3 pos=new Vector3((N(wall,"x")+N(wall,"x1"))/2000f,
+                    (N(wall,"heightStart")+N(wall,"heightEnd",3000))/2000f,
+                    (N(wall,"y")+N(wall,"y1"))/2000f);
+                DrawSurfaceLabel(pos,S(wall,"id")+" fal");
+            }
+            foreach(var room in plan.Root.Element("rooms")?.Elements("room")??Enumerable.Empty<XElement>())
+            {
+                var points=room.Elements("point").ToArray();
+                if(points.Length==0)continue;
+                Vector3 pos=new Vector3(points.Average(p=>N(p,"x"))/1000f,
+                    N(room,"floorHeight")/1000f+.06f,
+                    points.Average(p=>N(p,"y"))/1000f);
+                DrawSurfaceLabel(pos,S(room,"id")+" padló");
+            }
+        }
+        void DrawSurfaceLabel(Vector3 position,string label)
+        {
+            Vector3 point=worldCamera.WorldToScreenPoint(position);
+            if(point.z<=0)return;
+            float x=point.x-55,y=Screen.height-point.y-14;
+            if(x<0||y<45||x>Screen.width-110||y>Screen.height-28)return;
+            GUI.Box(new Rect(x,y,110,28),label);
+        }
         void OnGUI()
         {
             if(current=="viewer")
             {
                 DrawFurnitureSelectionOutline();
                 DrawFurnitureGizmo();
+                if(showSurfaceLabels)DrawSurfaceLabels();
                 DrawCabinetVisibilityMenu();
             }
             if(current=="editor")xmlEditor.Draw();
