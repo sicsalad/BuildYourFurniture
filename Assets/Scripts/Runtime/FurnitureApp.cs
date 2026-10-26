@@ -160,6 +160,7 @@ namespace BuildYourFurniture
         void DrawCabinetVisibilityMenu()
         {
             float barHeight=Mathf.Max(48,Screen.height*.085f);
+            DrawOpaquePanel(new Rect(0,0,Screen.width,barHeight));
             GUI.Box(new Rect(0,0,Screen.width,barHeight),"");
             if(GUI.Button(new Rect(12,8,140,barHeight-16),addMenuOpen?"Bezárás":"+ Hozzáadás"))
             {addMenuOpen=!addMenuOpen;roomNavigationOpen=false;}
@@ -184,6 +185,7 @@ namespace BuildYourFurniture
             if(addMenuOpen)
             {
                 float panelHeight=Mathf.Min(Screen.height-barHeight-45,addKinds.Length*38+45);
+                DrawOpaquePanel(new Rect(12,barHeight+4,280,panelHeight));
                 GUI.Box(new Rect(12,barHeight+4,280,panelHeight),"Bútor hozzáadása");
                 GUILayout.BeginArea(new Rect(20,barHeight+30,264,panelHeight-35));
                 for(int i=0;i<addKinds.Length;i++)
@@ -1727,10 +1729,18 @@ namespace BuildYourFurniture
             {furnitureEditError="";SaveLaminates();RefreshViewerGeometry();}
             else furnitureEditError=reason;
         }
+        internal static void DrawOpaquePanel(Rect rect)
+        {
+            Color previous=GUI.color;
+            GUI.color=new Color(.105f,.125f,.15f,1f);
+            GUI.DrawTexture(rect,Texture2D.whiteTexture,ScaleMode.StretchToFill);
+            GUI.color=previous;
+        }
         void DrawSelectedFurniture(float barHeight)
         {
             if(selectedFurniture==null)return;
             var rect=new Rect(12,barHeight+12,330,Mathf.Min(Screen.height-barHeight-20,740));
+            DrawOpaquePanel(rect);
             GUI.Box(rect,"Kijelölt elem: "+S(selectedFurniture,"id"));
             GUILayout.BeginArea(new Rect(rect.x+10,rect.y+28,rect.width-20,rect.height-35));
             furnitureInspectorScroll=GUILayout.BeginScrollView(furnitureInspectorScroll);
