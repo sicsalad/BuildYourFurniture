@@ -28,10 +28,10 @@ namespace BuildYourFurniture
         {
             string old=S(target,key);
             var labels=new[]{"Nincs textúra"}.Concat(names).ToArray();
-            int index=Array.FindIndex(names,n=>string.Equals("Textures/"+n,old,StringComparison.OrdinalIgnoreCase)||string.Equals(n,old,StringComparison.OrdinalIgnoreCase));
+            int index=Array.FindIndex(names,n=>string.Equals("Textures/"+n,old,StringComparison.OrdinalIgnoreCase)||string.Equals("procedural:"+n,old,StringComparison.OrdinalIgnoreCase)||string.Equals(n,old,StringComparison.OrdinalIgnoreCase));
             int next=GUILayout.SelectionGrid(index+1,labels,2);
             if(next==index+1)return false;
-            target.SetAttributeValue(key,next==0?"":"Textures/"+names[next-1]);
+            target.SetAttributeValue(key,next==0?"":(Array.IndexOf(SurfaceTextureLibrary.Names,names[next-1])>=0?"procedural:":"Textures/")+names[next-1]);
             return true;
         }
         static bool Number(XElement e,string key,string label,float step,float min,float max)
@@ -145,7 +145,7 @@ namespace BuildYourFurniture
         {
             bool changed=false;
             GUILayout.Label("Textúra a projektből");
-            changed|=Choice(item,"texture",TextureNames());
+            changed|=Choice(item,"texture",SurfaceTextureLibrary.Names.Concat(TextureNames()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
             GUILayout.Label("Felület színe");
             changed|=ColorChoice(item,"color");
             float smooth=N(item,"smoothness",wall?.15f:.4f);
