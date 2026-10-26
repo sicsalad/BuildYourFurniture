@@ -427,7 +427,7 @@ namespace BuildYourFurniture
                 {
                     float dx=ev.mousePosition.x-scrubMouse.x;
                     float next=rotation?Mathf.Round((scrubStart+dx*.9f)/90f)*90f:
-                        scrubStart+dx*(ev.shift?0.1f:1f);
+                        scrubStart+Mathf.Round(dx/(ev.shift?15f:5f))*5f;
                     fields[key]=next.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
                     dirty=true;ev.Use();
                 }
@@ -472,32 +472,53 @@ namespace BuildYourFurniture
             string display=string.IsNullOrWhiteSpace(formula)?
                 current.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture):formula;
             GUILayout.BeginHorizontal();
-            GUILayout.Label(vertex.Id+(x?" X":" Y"),GUILayout.Width(100));
+            Rect labelRect=GUILayoutUtility.GetRect(new GUIContent(vertex.Id+(x?" X ↔":" Y ↔")),GUI.skin.label,GUILayout.Width(100));
+            GUI.Label(labelRect,vertex.Id+(x?" X ↔":" Y ↔"));
+            var ev=Event.current;
+            int control=GUIUtility.GetControlID(fieldKey.GetHashCode(),FocusType.Passive,labelRect);
+            if(ev.type==EventType.MouseDown&&ev.button==0&&labelRect.Contains(ev.mousePosition))
+            {GUIUtility.hotControl=control;scrubKey=fieldKey;scrubStart=current;scrubMouse=ev.mousePosition;scrubActive=true;ev.Use();}
+            if(scrubActive&&scrubKey==fieldKey)
+            {
+                if(ev.type==EventType.MouseDrag&&GUIUtility.hotControl==control)
+                {
+                    float nextValue=scrubStart+Mathf.Round((ev.mousePosition.x-scrubMouse.x)/(ev.shift?15f:5f))*5f;
+                    if(x){vertex.Point.x=nextValue;vertex.XFormula="";}
+                    else {vertex.Point.y=nextValue;vertex.YFormula="";}
+                    fields[fieldKey]=nextValue.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+                    dirty=true;Rebuild();ev.Use();
+                }
+                if(ev.type==EventType.KeyDown&&ev.keyCode==KeyCode.Escape)
+                {
+                    if(x){vertex.Point.x=scrubStart;vertex.XFormula=formula;}
+                    else {vertex.Point.y=scrubStart;vertex.YFormula=formula;}
+                    fields[fieldKey]=display;scrubActive=false;GUIUtility.hotControl=0;Rebuild();ev.Use();
+                }
+                if(ev.type==EventType.MouseUp&&ev.button==0){scrubActive=false;GUIUtility.hotControl=0;ev.Use();}
+            }
             string input;
             if(!fields.TryGetValue(fieldKey,out input))input=display;
             GUI.SetNextControlName(fieldKey);
             string next=GUILayout.TextField(input);
+            bool changed=next!=input;
             fields[fieldKey]=next;
-            bool enter=Event.current.type==EventType.KeyDown &&
-                (Event.current.keyCode==KeyCode.Return||Event.current.keyCode==KeyCode.KeypadEnter) &&
-                GUI.GetNameOfFocusedControl()==fieldKey;
-            bool apply=GUILayout.Button("✓",GUILayout.Width(28));
-            if(apply||enter)
+            if(changed&&!string.IsNullOrWhiteSpace(next))
             {
                 try
                 {
-                    if(string.IsNullOrWhiteSpace(next))throw new FormatException("Üres képlet");
                     float result=CabinetFormulaResolver.Evaluate(document,next);
                     float literalValue;
                     bool literal=float.TryParse(next,System.Globalization.NumberStyles.Float,
                         System.Globalization.CultureInfo.InvariantCulture,out literalValue);
                     if(x){vertex.Point.x=result;vertex.XFormula=literal?"":next;}
                     else {vertex.Point.y=result;vertex.YFormula=literal?"":next;}
-                    fields[fieldKey]=literal?result.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture):next;
                     dirty=true;Rebuild();
-                    if(enter){GUI.FocusControl("");Event.current.Use();}
                 }
-                catch(Exception ex){error="Képlet ("+key+"): "+ex.Message;}
+                catch(Exception ex)
+                {
+                    // Keep incomplete text while typing; restore the last valid geometry.
+                    error="Képlet ("+key+"): "+ex.Message;
+                }
             }
             GUILayout.EndHorizontal();
             return x?vertex.Point.x:vertex.Point.y;
@@ -770,7 +791,7 @@ namespace BuildYourFurniture
         {
             var mouse=MouseGUI();
             bool inside=ImageRect().Contains(mouse);
-            if(inside&&Mathf.Abs(Wheel())>.001f)zoom=Mathf.Clamp(zoom-Wheel()*.2f,.3f,20);
+            if(inside&&Mathf.Abs(Wheel())>.001f)zoom=Mathf.Clamp(zoom*Mathf.Pow(1.45f,Wheel()),.08f,80f);
             if(MouseDown(1)&&inside){orbiting=true;previousMouse=mouse;}
             if(!MouseHeld(1))orbiting=false;
             if(orbiting)
