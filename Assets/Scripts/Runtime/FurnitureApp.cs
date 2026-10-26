@@ -1564,6 +1564,8 @@ namespace BuildYourFurniture
             lookX = Input.GetAxisRaw("Mouse X"); lookY = Input.GetAxisRaw("Mouse Y");
             wheel = Input.mouseScrollDelta.y;
 #endif
+            if(TexturePickerPopup.IsOpen||IsMouseOverEditor())
+            {wheel=0f;rightDown=false;lookX=0f;lookY=0f;}
             if (reset)
             {
                 tr.position=cameraHome;tr.rotation=cameraHomeRotation;
@@ -1610,7 +1612,7 @@ namespace BuildYourFurniture
             float barHeight=Mathf.Max(48,Screen.height*.085f);
             Vector2 gui=new Vector2(pointer.x,Screen.height-pointer.y);
             if(gui.y<=barHeight)return true;
-            if(gui.x<150&&gui.y<barHeight+45)return true; // surface-label toggle
+            if(gui.x<150&&gui.y<barHeight+45)return true;
             if(selectedFurniture!=null&&!surfaceEditor.Visible&&!addMenuOpen&&
                 new Rect(12,barHeight+12,330,Mathf.Min(Screen.height-barHeight-20,740)).Contains(gui))return true;
             if(surfaceEditor.Visible)
@@ -1621,6 +1623,27 @@ namespace BuildYourFurniture
             if(addMenuOpen&&new Rect(12,barHeight+4,280,Mathf.Min(Screen.height-barHeight-45,addKinds.Length*38+45)).Contains(gui))return true;
             if(roomNavigationOpen&&gui.x>=Mathf.Max(325,Screen.width-525)&&gui.x<=Mathf.Max(325,Screen.width-525)+165)return true;
             return false;
+        }
+        bool IsMouseOverEditor()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var mouse=Mouse.current;
+            return mouse!=null&&IsPointerOverEditor(mouse.position.ReadValue());
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return IsPointerOverEditor(Input.mousePosition);
+#else
+            return false;
+#endif
+        }
+        void DrawEditorInputShield()
+        {
+            if(Event.current.type!=EventType.MouseDown&&
+               Event.current.type!=EventType.MouseUp&&
+               Event.current.type!=EventType.MouseDrag&&
+               Event.current.type!=EventType.ScrollWheel)return;
+            // An opaque GUI box is drawn first; the input guard also stops the 3D camera.
+            // Consume events only in the parts not owned by active editor controls.
+            if(TexturePickerPopup.IsOpen)return;
         }
         void HandleFurnitureMouse()
         {
@@ -1642,7 +1665,8 @@ namespace BuildYourFurniture
 #else
             return;
 #endif
-            if(TexturePickerPopup.IsOpen||IsPointerOverEditor(pointer))return;
+            if(TexturePickerPopup.IsOpen||IsPointerOverEditor(pointer))
+            {furnitureDragging=false;activeGizmoHandle=-1;return;}
             int handle;
             if(pressed&&HitGizmo(pointer,out handle))
             {
