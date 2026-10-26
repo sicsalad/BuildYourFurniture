@@ -89,7 +89,8 @@ namespace BuildYourFurniture
                 box("Shelf",new Vector3(0,h*.78f,0),new Vector3(w-2*p,p,d-p),wood,root.transform);
                 box("Hanging rail",new Vector3(0,h*.68f,0),new Vector3(w-3*p,.02f,.02f),metal,root.transform);
                 float doorW=(w-2*p)*.52f;
-                for(int i=0;i<2;i++)
+                bool openWardrobe=N(e,"wardrobeType",0)>=3;
+                for(int i=0;i<(openWardrobe?0:2);i++)
                 {
                     var door=new GameObject(i==0?"Left sliding door":"Right sliding door");
                     door.transform.SetParent(root.transform,false);
@@ -114,8 +115,8 @@ namespace BuildYourFurniture
                             new Vector3(doorW-.006f,h-.028f,.006f),doorMaterial,door.transform);
                     }
                 }
-                box("Top sliding rail",new Vector3(0,h-.023f,-d*.5f-.018f),new Vector3(w,.022f,.048f),metal,root.transform);
-                box("Bottom sliding rail",new Vector3(0,.024f,-d*.5f-.018f),new Vector3(w,.022f,.048f),metal,root.transform);
+                if(!openWardrobe)box("Top sliding rail",new Vector3(0,h-.023f,-d*.5f-.018f),new Vector3(w,.022f,.048f),metal,root.transform);
+                if(!openWardrobe)box("Bottom sliding rail",new Vector3(0,.024f,-d*.5f-.018f),new Vector3(w,.022f,.048f),metal,root.transform);
             }
         }
     }
