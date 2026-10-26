@@ -62,32 +62,6 @@ namespace BuildYourFurniture
             if(material.HasProperty("_BaseMap"))material.SetTexture("_BaseMap",texture);
             return material;
         }
-        static void SetDoorUv(GameObject panel,XElement e,int side,float width,float height)
-        {
-            string prefix=side==0?"leftDoor":"rightDoor";
-            string mode=S(e,prefix+"TextureMode",S(e,"doorTextureMode","tile"));
-            float tileMm=Mathf.Max(25,N(e,prefix+"TileMm",N(e,"doorTileMm",400)));
-            bool rotated=N(e,prefix+"TextureRotation",N(e,"doorTextureRotation",0))>=45;
-            float u=mode=="stretch"?1:Mathf.Max(.01f,width*1000f/tileMm);
-            float v=mode=="stretch"?1:Mathf.Max(.01f,height*1000f/tileMm);
-            var mesh=panel.GetComponent<MeshFilter>().mesh;
-            var uv=mesh.uv;
-            // The front face of a Unity cube uses UVs at indices 4..7.
-            // Map both broad faces, keeping side faces independent.
-            for(int face=0;face<6;face++)
-            {
-                int offset=face*4;
-                if(offset+3>=uv.Length)break;
-                for(int k=0;k<4;k++)
-                {
-                    Vector2 original=uv[offset+k];
-                    uv[offset+k]=rotated?
-                        new Vector2(original.y*v,(1f-original.x)*u):
-                        new Vector2(original.x*u,original.y*v);
-                }
-            }
-            mesh.uv=uv;
-        }
         public static void Build(XDocument plan,Action<GameObject> register)
         {
             var collection=plan?.Root?.Element("mirroredWardrobes");
@@ -150,7 +124,7 @@ namespace BuildYourFurniture
                         mirror.name="Full door live mirror";
                         mirror.transform.SetParent(door.transform,false);
                         mirror.transform.localPosition=new Vector3(0,h*.5f,-.0135f);
-                        mirror.transform.localRotation=Quaternion.identity;
+                        mirror.transform.localRotation=Quaternion.Euler(0,180,0);
                         mirror.transform.localScale=new Vector3(doorW-.006f,h-.028f,1);
                         var component=mirror.AddComponent<PlanarWardrobeMirror>();
                         component.Initialize();
@@ -161,6 +135,7 @@ namespace BuildYourFurniture
                         surface.name=i==0?"Left door finish":"Right door finish";
                         surface.transform.SetParent(door.transform,false);
                         surface.transform.localPosition=new Vector3(0,h*.5f,-.019f);
+                        surface.transform.localRotation=Quaternion.Euler(0,180,0);
                         surface.transform.localScale=new Vector3(doorW-.006f,h-.028f,1);
                         var material=DoorMaterial(e,i,doorFinish);
                         surface.GetComponent<Renderer>().sharedMaterial=material;
