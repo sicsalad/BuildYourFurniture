@@ -245,6 +245,93 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawLedTvEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Falra szerelhető LED TV-k");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            ledTvEditorScroll=GUILayout.BeginScrollView(ledTvEditorScroll);
+            if(plan!=null)
+            {
+                var tvs=plan.Root.Element("ledTvs");
+                if(tvs==null){tvs=new XElement("ledTvs");plan.Root.Add(tvs);}
+                if(GUILayout.Button("+ LED TV (54 col)",GUILayout.Height(34)))
+                {
+                    int id=1;
+                    while(tvs.Elements("tv").Any(e=>S(e,"id")=="LED"+id))id++;
+                    tvs.Add(new XElement("tv",new XAttribute("id","LED"+id),
+                        new XAttribute("inches","54"),new XAttribute("bottomHeight","900"),
+                        new XAttribute("x","500"),new XAttribute("y","500"),
+                        new XAttribute("rotation","0"),new XAttribute("screen","0"),
+                        new XAttribute("color","#1C1C1E")));
+                    SaveLedTvs();RefreshViewerGeometry();
+                }
+                foreach(var tv in tvs.Elements("tv").ToList())
+                {
+                    GUILayout.Label("LED TV "+S(tv,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(string property in new[]{"inches","bottomHeight","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        string label=property=="inches"?"Képátló (col)":
+                            property=="bottomHeight"?"Alsó él magassága (mm)":
+                            property=="x"?"X pozíció (mm)":property=="y"?"Y pozíció (mm)":"Forgatás (°)";
+                        GUILayout.Label(label,GUILayout.Width(160));
+                        string oldValue=S(tv,property,"0");
+                        string next=GUILayout.TextField(oldValue);
+                        float parsed;
+                        if(next!=oldValue&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out parsed))
+                        {
+                            if(property=="inches")parsed=Mathf.Clamp(parsed,19,100);
+                            if(property=="bottomHeight")parsed=Mathf.Max(0,parsed);
+                            tv.SetAttributeValue(property,SofaNumber(parsed));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    float inches=N(tv,"inches",54);
+                    GUILayout.Label("Képernyő: "+LedTvRenderer.WidthMm(inches).ToString("0")+" × "+
+                        LedTvRenderer.HeightMm(inches).ToString("0")+" mm (16:9)");
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Keret színe (HEX)",GUILayout.Width(160));
+                    string oldColor=S(tv,"color","#1C1C1E");
+                    string newColor=GUILayout.TextField(oldColor);
+                    Color parsedColor;
+                    if(newColor!=oldColor&&ColorUtility.TryParseHtmlString(newColor,out parsedColor))
+                    {tv.SetAttributeValue("color",newColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Kijelző textúrája (10)");
+                    int selected=Mathf.Clamp(Mathf.RoundToInt(N(tv,"screen",0)),0,LedTvRenderer.ScreenPresets.Length-1);
+                    for(int i=0;i<LedTvRenderer.ScreenPresets.Length;i++)
+                    {
+                        if(GUILayout.Toggle(i==selected,LedTvRenderer.ScreenPresets[i],"Button")&&i!=selected)
+                        {tv.SetAttributeValue("screen",i);selected=i;changed=true;}
+                    }
+                    if(GUILayout.Button("LED TV törlése")){tv.Remove();changed=true;}
+                    if(changed){SaveLedTvs();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveLedTvs()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="LED TV mentve a tervbe.";
+            }
+            catch(Exception ex){status="LED TV mentési hiba: "+ex.Message;}
+        }
         void DrawTvStandEditor(float barHeight)
         {
             var area=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
