@@ -41,6 +41,8 @@ namespace BuildYourFurniture
         bool rugEditorOpen;
         bool dividerEditorOpen;
         bool tableEditorOpen;
+        bool wardrobeEditorOpen;
+        Vector2 wardrobeEditorScroll;
         Vector2 tableEditorScroll;
         Vector2 dividerEditorScroll;
         Vector2 rugEditorScroll;
@@ -146,6 +148,8 @@ namespace BuildYourFurniture
             if(dividerEditorOpen)DrawDividerEditor(barHeight);
             if(GUI.Button(new Rect(1525,8,140,Mathf.Max(30,barHeight-16)),tableEditorOpen?"Asztalok ▲":"Asztalok +"))tableEditorOpen=!tableEditorOpen;
             if(tableEditorOpen)DrawTableEditor(barHeight);
+            if(GUI.Button(new Rect(1675,8,170,Mathf.Max(30,barHeight-16)),wardrobeEditorOpen?"Gardrób ▲":"Tükrös gardrób +"))wardrobeEditorOpen=!wardrobeEditorOpen;
+            if(wardrobeEditorOpen)DrawWardrobeEditor(barHeight);
             if(!cabinetVisibilityOpen)return;
             var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
             if(cabinets==null)return;
@@ -1225,6 +1229,7 @@ namespace BuildYourFurniture
             RugRenderer.Build(renderPlan, element=>geometry.Add(element));
             DividerShelfRenderer.Build(renderPlan, element=>geometry.Add(element));
             TableRenderer.Build(renderPlan, element=>geometry.Add(element));
+            MirroredWardrobeRenderer.Build(renderPlan, element=>geometry.Add(element));
             PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
