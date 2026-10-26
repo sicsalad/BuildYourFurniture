@@ -1801,13 +1801,32 @@ namespace BuildYourFurniture
                     bool rotated=N(selectedFurniture,prefix+"TextureRotation")>=45;
                     int rotation=GUILayout.SelectionGrid(rotated?1:0,new[]{"0°","90°"},2);
                     if(rotation!=(rotated?1:0))ChangeDoorProperty(prefix+"TextureRotation",rotation*90);
-                    GUILayout.Label("Ajtó textúra (Resources/Textures)");
+                    GUILayout.Label("Textúra kiválasztása");
                     string key=prefix+"Texture";
                     string previous=S(selectedFurniture,key);
-                    string entered=GUILayout.TextField(previous);
-                    if(previous!=entered)
+                    var textureChoices=Resources.LoadAll<Texture2D>("Textures")
+                        .Where(t=>t!=null).Select(t=>t.name)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(name=>name,StringComparer.OrdinalIgnoreCase).ToArray();
+                    string[] labels=new[]{"Generált anyagminta"}.Concat(textureChoices).ToArray();
+                    int currentTexture=Array.FindIndex(textureChoices,
+                        name=>string.Equals(name,previous,StringComparison.OrdinalIgnoreCase));
+                    int chosenTexture=GUILayout.SelectionGrid(currentTexture+1,labels,2);
+                    if(chosenTexture!=currentTexture+1)
                     {
-                        selectedFurniture.SetAttributeValue(key,entered);
+                        selectedFurniture.SetAttributeValue(key,
+                            chosenTexture==0?"":textureChoices[chosenTexture-1]);
+                        SaveLaminates();RefreshViewerGeometry();
+                    }
+                    if(textureChoices.Length==0)
+                        GUILayout.Label("Nincs Texture2D az Assets/Resources/Textures mappában.");
+                    GUILayout.Label("Felület fénye");
+                    string glossKey=prefix+"Smoothness";
+                    float gloss=Mathf.Clamp01(N(selectedFurniture,glossKey,.35f));
+                    float newGloss=GUILayout.HorizontalSlider(gloss,0f,1f);
+                    if(Mathf.Abs(newGloss-gloss)>.025f)
+                    {
+                        selectedFurniture.SetAttributeValue(glossKey,SofaNumber(newGloss));
                         SaveLaminates();RefreshViewerGeometry();
                     }
                 }
