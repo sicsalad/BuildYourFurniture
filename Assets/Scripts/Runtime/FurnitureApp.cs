@@ -2087,26 +2087,40 @@ namespace BuildYourFurniture
             {furnitureEditError="";RefreshViewerGeometry();}
             else furnitureEditError=reason;
         }
+        // Draw the actual 3D oriented bounding box instead of a screen-space rectangle.
         void DrawFurnitureSelectionOutline()
         {
             if(selectedFurniture==null||worldCamera==null||addMenuOpen)return;
-            var corners=FurniturePlacement.Corners(selectedFurniture);
-            float y=N(selectedFurniture,"z")/1000f;
-            float h=FurniturePlacement.Height(selectedFurniture);
-            var points=new List<Vector3>();
-            foreach(var corner in corners)
+            Vector2[] corners=FurniturePlacement.Corners(selectedFurniture);
+            float bottom=N(selectedFurniture,"z")/1000f;
+            float top=bottom+FurniturePlacement.Height(selectedFurniture);
+            var points=new Vector3[8];
+            for(int i=0;i<4;i++)
             {
-                points.Add(worldCamera.WorldToScreenPoint(new Vector3(corner.x,y,corner.y)));
-                points.Add(worldCamera.WorldToScreenPoint(new Vector3(corner.x,y+h,corner.y)));
+                points[i]=worldCamera.WorldToScreenPoint(new Vector3(corners[i].x,bottom,corners[i].y));
+                points[i+4]=worldCamera.WorldToScreenPoint(new Vector3(corners[i].x,top,corners[i].y));
             }
-            if(points.Any(p=>p.z<=0))return;
-            float minX=points.Min(p=>p.x),maxX=points.Max(p=>p.x);
-            float minY=points.Min(p=>p.y),maxY=points.Max(p=>p.y);
-            var rect=new Rect(minX,Screen.height-maxY,maxX-minX,maxY-minY);
-            if(rect.width<2||rect.height<2)return;
-            var old=GUI.color;GUI.color=new Color(.2f,.95f,.35f,1f);
-            GUI.Box(rect,"");
-            GUI.color=old;
+            if(Event.current.type!=EventType.Repaint)return;
+            int[,] edges={{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
+            for(int i=0;i<12;i++)
+            {
+                Vector3 a=points[edges[i,0]],b=points[edges[i,1]];
+                if(a.z<=0||b.z<=0)continue;
+                DrawViewerLine(new Vector2(a.x,Screen.height-a.y),new Vector2(b.x,Screen.height-b.y),
+                    new Color(.2f,1f,.45f),2.5f);
+            }
+        }
+        void DrawViewerLine(Vector2 a,Vector2 b,Color color,float width)
+        {
+            Vector2 d=b-a;
+            if(d.sqrMagnitude<.001f)return;
+            Matrix4x4 oldMatrix=GUI.matrix;
+            Color oldColor=GUI.color;
+            GUI.color=color;
+            GUIUtility.RotateAroundPivot(Mathf.Atan2(d.y,d.x)*Mathf.Rad2Deg,a);
+            GUI.DrawTexture(new Rect(a.x,a.y-width*.5f,d.magnitude,width),Texture2D.whiteTexture);
+            GUI.matrix=oldMatrix;
+            GUI.color=oldColor;
         }
         void OnGUI()
         {
