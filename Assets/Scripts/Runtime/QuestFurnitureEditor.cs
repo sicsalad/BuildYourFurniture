@@ -44,6 +44,14 @@ namespace BuildYourFurniture
             controller=InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
             RefreshTextures();
         }
+        public bool IsPanelOpen=>panel!=null&&panel.gameObject.activeSelf;
+        public void OpenPanel()
+        {
+            if(panel==null)return;
+            texturesVisible=false;
+            panel.gameObject.SetActive(true);
+            Rebuild();
+        }
         void RefreshTextures()
         {
             var ids=new List<string>();
