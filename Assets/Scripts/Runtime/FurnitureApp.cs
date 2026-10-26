@@ -1239,6 +1239,40 @@ namespace BuildYourFurniture
             Debug.LogWarning("Missing UI image: Assets/Resources/" + resource + ".png");
             return null;
         }
+        void SaveViewerCamera()
+        {
+            if(plan?.Root==null||worldCamera==null)return;
+            var tr=worldCamera.transform;
+            var view=plan.Root.Element("cameraState");
+            if(view==null){view=new XElement("cameraState");plan.Root.Add(view);}
+            Action<string,float> set=(key,value)=>view.SetAttributeValue(key,value.ToString("R",CultureInfo.InvariantCulture));
+            set("x",tr.position.x);set("y",tr.position.y);set("z",tr.position.z);
+            set("pitch",tr.eulerAngles.x);set("yaw",tr.eulerAngles.y);set("roll",tr.eulerAngles.z);
+            set("orthographicSize",worldCamera.orthographicSize);
+            view.SetAttributeValue("orthographic",worldCamera.orthographic?"true":"false");
+            try
+            {
+                string selected=File.Exists(PlanSelectionPath)?File.ReadAllText(PlanSelectionPath).Trim():"bundled";
+                string path=selected!="bundled"&&Path.IsPathRooted(selected)?selected:VisibilityPath;
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+            }
+            catch(Exception ex){Debug.LogWarning("Kameranézet mentési hiba: "+ex.Message);}
+        }
+        bool RestoreViewerCamera()
+        {
+            var state=plan?.Root?.Element("cameraState");
+            if(state==null||worldCamera==null)return false;
+            var tr=worldCamera.transform;
+            tr.position=new Vector3(N(state,"x"),N(state,"y"),N(state,"z"));
+            tr.rotation=Quaternion.Euler(N(state,"pitch"),N(state,"yaw"),N(state,"roll"));
+            worldCamera.orthographic=S(state,"orthographic")=="true";
+            worldCamera.orthographicSize=Mathf.Max(.1f,N(state,"orthographicSize",5));
+            apartmentOverview=worldCamera.orthographic;
+            return true;
+        }
+        void OnApplicationQuit(){if(current=="viewer")SaveViewerCamera();}
+        void OnApplicationPause(bool paused){if(paused&&current=="viewer")SaveViewerCamera();}
         void Clear()
         {
             foreach (var g in generated) if (g) Destroy(g);
@@ -1278,6 +1312,7 @@ namespace BuildYourFurniture
                 Destroy(runtimeCabinetDesigner.gameObject);
                 runtimeCabinetDesigner=null;
             }
+            if(current=="viewer"&&screen!="viewer")SaveViewerCamera();
             Clear(); current = screen;
             if(screen=="cabinetDesigner")
             {
@@ -1820,6 +1855,7 @@ namespace BuildYourFurniture
             go.transform.LookAt(new Vector3(1.33f,1.1f,1.1f));
             if(apartmentOverview&&plan?.Root?.Element("rooms")?.Elements("room").Skip(1).Any()==true)ApplyApartmentOverview(worldCamera);
             else ApplyViewerStart(go.transform);
+            RestoreViewerCamera();
             cameraHome = go.transform.position;
             cameraHomeRotation = go.transform.rotation;
             SyncCameraAngles();
