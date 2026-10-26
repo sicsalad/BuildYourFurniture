@@ -1638,6 +1638,46 @@ namespace BuildYourFurniture
             return false;
 #endif
         }
+        string SelectQuestFurniture(RaycastHit hit)
+        {
+            if(plan==null)return null;
+            Transform node=hit.collider.transform;
+            while(node!=null)
+            {
+                string name=node.name;
+                foreach(var item in FurniturePlacement.Objects(plan))
+                {
+                    string id=S(item,"id");
+                    if(!string.IsNullOrEmpty(id)&&
+                        (name.EndsWith(" "+id,StringComparison.OrdinalIgnoreCase)||
+                         name.Equals(id,StringComparison.OrdinalIgnoreCase)))
+                    {
+                        selectedFurniture=item;
+                        furnitureEditError="";
+                        return id;
+                    }
+                }
+                node=node.parent;
+            }
+            return null;
+        }
+        void SetupQuestEditor(GameObject cameraObject)
+        {
+            var editor=cameraObject.AddComponent<QuestFurnitureEditor>();
+            editor.SelectFurniture=SelectQuestFurniture;
+            editor.SelectedName=()=>selectedFurniture==null?null:S(selectedFurniture,"id");
+            editor.ReadNumber=key=>selectedFurniture==null?0:N(selectedFurniture,key);
+            editor.WriteNumber=(key,value)=>ChangeFurniture(key,value);
+            editor.ReadTexture=()=>selectedFurniture==null?null:S(selectedFurniture,"texture");
+            editor.WriteTexture=id=>
+            {
+                if(selectedFurniture==null)return;
+                selectedFurniture.SetAttributeValue("texture",id);
+                SaveLaminates();
+                RefreshViewerGeometry();
+            };
+            editor.Save=SaveLaminates;
+        }
         void HandleFurnitureMouse()
         {
             if(worldCamera==null||plan==null)return;
@@ -2097,6 +2137,7 @@ namespace BuildYourFurniture
             if(UnityEngine.XR.XRSettings.isDeviceActive)
             {
                 go.AddComponent<QuestRoomController>();
+                SetupQuestEditor(go);
                 worldCamera.orthographic=false;
                 worldCamera.nearClipPlane=.05f;
             }
