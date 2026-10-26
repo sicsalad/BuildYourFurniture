@@ -253,6 +253,90 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawDividerEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Térelválasztó polcos szekrények");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            dividerEditorScroll=GUILayout.BeginScrollView(dividerEditorScroll);
+            if(plan!=null)
+            {
+                var shelves=plan.Root.Element("dividerShelves");
+                if(shelves==null){shelves=new XElement("dividerShelves");plan.Root.Add(shelves);}
+                if(GUILayout.Button("+ Térelválasztó (140 × 160 × 35 cm)",GUILayout.Height(34)))
+                {
+                    int number=1;
+                    while(shelves.Elements("shelf").Any(e=>S(e,"id")=="DIV"+number))number++;
+                    shelves.Add(new XElement("shelf",new XAttribute("id","DIV"+number),
+                        new XAttribute("width","1400"),new XAttribute("height","1600"),
+                        new XAttribute("depth","350"),new XAttribute("x","500"),
+                        new XAttribute("y","500"),new XAttribute("rotation","0"),
+                        new XAttribute("finish","0"),new XAttribute("color",DividerShelfRenderer.Colors[0])));
+                    SaveDividers();RefreshViewerGeometry();
+                }
+                foreach(var shelf in shelves.Elements("shelf").ToList())
+                {
+                    GUILayout.Label("Térelválasztó "+S(shelf,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(string key in new[]{"width","height","depth","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        string label=key=="width"?"Szélesség (mm)":key=="height"?"Magasság (mm)":
+                            key=="depth"?"Mélység (mm)":key=="x"?"X pozíció (mm)":
+                            key=="y"?"Y pozíció (mm)":"Forgatás (°)";
+                        GUILayout.Label(label,GUILayout.Width(155));
+                        string oldValue=S(shelf,key,"0");
+                        string next=GUILayout.TextField(oldValue);
+                        float number;
+                        if(next!=oldValue&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out number))
+                        {
+                            if(key=="width"||key=="height")number=Mathf.Max(250,number);
+                            if(key=="depth")number=Mathf.Max(150,number);
+                            shelf.SetAttributeValue(key,SofaNumber(number));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Szín (HEX)",GUILayout.Width(155));
+                    string oldColor=S(shelf,"color",DividerShelfRenderer.Colors[0]);
+                    string nextColor=GUILayout.TextField(oldColor);
+                    Color parsed;
+                    if(nextColor!=oldColor&&ColorUtility.TryParseHtmlString(nextColor,out parsed))
+                    {shelf.SetAttributeValue("color",nextColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Bútorlap textúra (10)");
+                    int selected=Mathf.Clamp(Mathf.RoundToInt(N(shelf,"finish",0)),0,DividerShelfRenderer.Finishes.Length-1);
+                    for(int i=0;i<DividerShelfRenderer.Finishes.Length;i++)
+                    {
+                        if(GUILayout.Toggle(i==selected,DividerShelfRenderer.Finishes[i],"Button")&&i!=selected)
+                        {shelf.SetAttributeValue("finish",i);shelf.SetAttributeValue("color",DividerShelfRenderer.Colors[i]);selected=i;changed=true;}
+                    }
+                    if(GUILayout.Button("Térelválasztó törlése")){shelf.Remove();changed=true;}
+                    if(changed){SaveDividers();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveDividers()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Térelválasztó mentve a tervbe.";
+            }
+            catch(Exception ex){status="Térelválasztó mentési hiba: "+ex.Message;}
+        }
         void DrawRugEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
