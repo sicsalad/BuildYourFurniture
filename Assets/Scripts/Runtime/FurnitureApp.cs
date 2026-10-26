@@ -2132,6 +2132,56 @@ namespace BuildYourFurniture
                 var element = Cube(name, position, size, color);
                 element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
             }, element => geometry.Add(element));
+            ApplyWallSurfaces();
+        }
+        void ApplyWallSurfaces()
+        {
+            if(plan?.Root==null)return;
+            foreach(var wall in plan.Root.Element("walls")?.Elements("wall")??Enumerable.Empty<XElement>())
+            {
+                var surface=wall.Element("surface");
+                if(surface==null)continue;
+                string id=S(wall,"id");
+                string textureName=S(surface,"texture");
+                Texture2D texture=null;
+                if(!string.IsNullOrEmpty(textureName))
+                    texture=CabinetAppearanceLibrary.Load(textureName);
+                Color color;
+                if(!ColorUtility.TryParseHtmlString(S(surface,"color","#EFEDE3"),out color))
+                    color=Color.white;
+                float smooth=Mathf.Clamp01(N(surface,"smoothness",.15f));
+                float unit=Mathf.Max(50,N(surface,"textureSize",500))/1000f;
+                bool stretch=S(surface,"textureMode","tile")=="stretch";
+                bool rotate=N(surface,"textureRotation")>=45;
+                foreach(var obj in geometry)
+                {
+                    if(obj==null||!obj.name.StartsWith(id+"_segment",StringComparison.Ordinal))continue;
+                    var renderer=obj.GetComponent<Renderer>();
+                    if(renderer==null)continue;
+                    var mat=renderer.material;
+                    mat.color=color;
+                    if(mat.HasProperty("_BaseColor"))mat.SetColor("_BaseColor",color);
+                    if(texture!=null)
+                    {
+                        mat.mainTexture=texture;
+                        if(mat.HasProperty("_BaseMap"))mat.SetTexture("_BaseMap",texture);
+                    }
+                    if(mat.HasProperty("_Smoothness"))mat.SetFloat("_Smoothness",smooth);
+                    if(mat.HasProperty("_Glossiness"))mat.SetFloat("_Glossiness",smooth);
+                    var mesh=obj.GetComponent<MeshFilter>()?.mesh;
+                    if(mesh==null)continue;
+                    var uv=mesh.uv;
+                    float u=stretch?1:obj.transform.localScale.x/unit;
+                    float v=stretch?1:obj.transform.localScale.y/unit;
+                    for(int k=0;k<uv.Length;k++)
+                    {
+                        Vector2 original=uv[k];
+                        uv[k]=rotate?new Vector2(original.y*v,(1-original.x)*u):
+                            new Vector2(original.x*u,original.y*v);
+                    }
+                    mesh.uv=uv;
+                }
+            }
         }
         void ApplyFurnitureAppearance()
         {
