@@ -106,6 +106,9 @@ namespace BuildYourFurniture
                 if (!ColorUtility.TryParseHtmlString(S(finish,"groutColor","#B6B0A9"),out groutColor)) groutColor=Color.gray;
                 if (!ColorUtility.TryParseHtmlString(S(finish,"color","#FFFFFF"),out tileColor)) tileColor=Color.white;
                 var tileTexture = TextureFor(S(finish,"texture","Textures/tuzzi-tile-base64"));
+                float textureUnit=Mathf.Max(50,N(finish,"textureSize",400))/1000f;
+                bool repeatTexture=S(finish,"textureMode","stretch")=="tile";
+                bool rotateTexture=N(finish,"textureRotation")>=45;
                 var tileMat = Material(tileColor,tileTexture,N(finish,"smoothness",.7f));
                 var groutMat = Material(groutColor,null,0);
                 foreach (var wall in Items(root,"walls","wall"))
@@ -165,7 +168,10 @@ namespace BuildYourFurniture
                                 float ty1=Mathf.Min(sy1,y1-grout*.5f);
                                 if(tx1<=tx0 || ty1<=ty0)continue;
                                 Quad(tv,tuv,ti,a,along,inward,tileDepth,tx0,tx1,ty0,ty1,
-                                    (tx0-x0)/width,(tx1-x0)/width,(ty0-y0)/height,(ty1-y0)/height);
+                                    rotateTexture?(ty0-y0)/height*(repeatTexture?height/textureUnit:1):(tx0-x0)/width*(repeatTexture?width/textureUnit:1),
+                                    rotateTexture?(ty1-y0)/height*(repeatTexture?height/textureUnit:1):(tx1-x0)/width*(repeatTexture?width/textureUnit:1),
+                                    rotateTexture?(tx0-x0)/width*(repeatTexture?width/textureUnit:1):(ty0-y0)/height*(repeatTexture?height/textureUnit:1),
+                                    rotateTexture?(tx1-x0)/width*(repeatTexture?width/textureUnit:1):(ty1-y0)/height*(repeatTexture?height/textureUnit:1));
                             }
                         }
                     }
