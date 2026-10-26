@@ -78,7 +78,16 @@ namespace BuildYourFurniture
                 UnityEngine.Object.Destroy(texture);return null;
             }
             string resource=id.StartsWith("resource:",StringComparison.Ordinal)?id.Substring(9):id;
-            return Resources.Load<Texture2D>(resource)??Resources.LoadAll<Texture2D>("").FirstOrDefault(t=>t.name==resource);
+            var fileTexture=Resources.Load<Texture2D>(resource)??Resources.LoadAll<Texture2D>("").FirstOrDefault(t=>t.name==resource);
+            if(fileTexture!=null)return fileTexture;
+            // Named fallback only: real user-supplied PNG files take precedence.
+            string filename=Path.GetFileName(resource).ToLowerInvariant();
+            string fallback=filename=="lapis-silver"?"Szurke marvany":
+                filename=="canyon-silver"?"Szurke gres":
+                filename=="lamina"?"Feher marvany":
+                filename=="hamilton-tolgy"?"Tolgy natur":
+                filename=="fenyo"?"Fenyofa":null;
+            return fallback==null?null:SurfaceTextureLibrary.Load(fallback);
         }
     }
 }
