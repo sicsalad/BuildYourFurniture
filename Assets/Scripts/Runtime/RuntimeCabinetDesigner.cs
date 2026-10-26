@@ -482,10 +482,18 @@ namespace BuildYourFurniture
             {
                 if(ev.type==EventType.MouseDrag&&GUIUtility.hotControl==control)
                 {
-                    float nextValue=scrubStart+Mathf.Round((ev.mousePosition.x-scrubMouse.x)/(ev.shift?15f:5f))*5f;
-                    if(x){vertex.Point.x=nextValue;vertex.XFormula="";}
-                    else {vertex.Point.y=nextValue;vertex.YFormula="";}
-                    fields[fieldKey]=nextValue.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+                    float delta=Mathf.Round((ev.mousePosition.x-scrubMouse.x)/(ev.shift?15f:5f))*5f;
+                    float nextValue=scrubStart+delta;
+                    string adjusted=nextValue.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+                    if(!string.IsNullOrWhiteSpace(formula))
+                    {
+                        // Preserve the original dependency and scrub only its numeric offset.
+                        adjusted="("+formula+")"+(delta>=0?"+":"")+
+                            delta.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+                    }
+                    if(x){vertex.Point.x=nextValue;vertex.XFormula=string.IsNullOrWhiteSpace(formula)?"":adjusted;}
+                    else {vertex.Point.y=nextValue;vertex.YFormula=string.IsNullOrWhiteSpace(formula)?"":adjusted;}
+                    fields[fieldKey]=adjusted;
                     dirty=true;Rebuild();ev.Use();
                 }
                 if(ev.type==EventType.KeyDown&&ev.keyCode==KeyCode.Escape)
