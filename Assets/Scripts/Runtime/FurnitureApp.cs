@@ -43,6 +43,7 @@ namespace BuildYourFurniture
         Vector2 gizmoStartPointer;
         float gizmoStartValue;
         bool rebuildingViewer;
+        bool restoreQuestEditor;
         Vector2 furnitureDragOffset;
         Vector2 lastInteriorPosition=new Vector2(1.33f,1.1f);
         bool sofaEditorOpen;
@@ -134,6 +135,8 @@ namespace BuildYourFurniture
         void RefreshViewerGeometry()
         {
             if(current!="viewer")return;
+            var previousQuestEditor=worldCamera?worldCamera.GetComponent<QuestFurnitureEditor>():null;
+            restoreQuestEditor=previousQuestEditor!=null&&previousQuestEditor.IsPanelOpen;
             Vector3 previousPosition=worldCamera?worldCamera.transform.position:Vector3.zero;
             Quaternion previousRotation=worldCamera?worldCamera.transform.rotation:Quaternion.identity;
             bool previousOrthographic=worldCamera&&worldCamera.orthographic;
@@ -143,7 +146,7 @@ namespace BuildYourFurniture
             if(worldCamera)Destroy(worldCamera.gameObject);
             worldCamera=null;
             rebuildingViewer=true;
-            try{BuildGeometry();}finally{rebuildingViewer=false;}
+            try{BuildGeometry();}finally{rebuildingViewer=false;restoreQuestEditor=false;}
             if(worldCamera)
             {
                 worldCamera.transform.position=previousPosition;
@@ -1664,6 +1667,7 @@ namespace BuildYourFurniture
         void SetupQuestEditor(GameObject cameraObject)
         {
             var editor=cameraObject.AddComponent<QuestFurnitureEditor>();
+            editor.OpenOnStart=restoreQuestEditor;
             editor.SelectFurniture=SelectQuestFurniture;
             editor.SelectedName=()=>selectedFurniture==null?null:S(selectedFurniture,"id");
             editor.ReadNumber=key=>selectedFurniture==null?0:N(selectedFurniture,key);
