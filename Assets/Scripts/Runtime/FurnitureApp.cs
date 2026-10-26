@@ -249,7 +249,7 @@ namespace BuildYourFurniture
                         new XAttribute("x","500"),new XAttribute("y","500"),
                         new XAttribute("rotation","0"),new XAttribute("color","#777C83"),
                         new XAttribute("fabric","0")));
-                    SaveSofas();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(sofas.Elements("sofa").Last())){SaveSofas();RefreshViewerGeometry();}
                 }
                 foreach(var sofa in sofas.Elements("sofa").ToList())
                 {
@@ -469,7 +469,7 @@ namespace BuildYourFurniture
                         new XAttribute("doorFinish","0"),new XAttribute("doorColor",MirroredWardrobeRenderer.Colors[0]),
                         new XAttribute("finish","0"),
                         new XAttribute("color",MirroredWardrobeRenderer.Colors[0])));
-                    SaveWardrobes();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(wardrobes.Elements("wardrobe").Last())){SaveWardrobes();RefreshViewerGeometry();}
                 }
                 foreach(var wardrobe in wardrobes.Elements("wardrobe").ToList())
                 {
@@ -576,7 +576,7 @@ namespace BuildYourFurniture
                             new XAttribute("x","500"),new XAttribute("y","500"),
                             new XAttribute("rotation","0"),new XAttribute("finish","0"),
                             new XAttribute("color",TableRenderer.Colors[0])));
-                        SaveTables();RefreshViewerGeometry();
+                        if(AddFurnitureToActiveRoom(tables.Elements("table").Last())){SaveTables();RefreshViewerGeometry();}
                     }
                 }
                 foreach(var table in tables.Elements("table").ToList())
@@ -677,7 +677,7 @@ namespace BuildYourFurniture
                         new XAttribute("depth","350"),new XAttribute("x","500"),
                         new XAttribute("y","500"),new XAttribute("rotation","0"),
                         new XAttribute("finish","0"),new XAttribute("color",DividerShelfRenderer.Colors[0])));
-                    SaveDividers();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(shelves.Elements("shelf").Last())){SaveDividers();RefreshViewerGeometry();}
                 }
                 foreach(var shelf in shelves.Elements("shelf").ToList())
                 {
@@ -761,7 +761,7 @@ namespace BuildYourFurniture
                         new XAttribute("thickness","12"),new XAttribute("x","500"),
                         new XAttribute("y","500"),new XAttribute("rotation","0"),
                         new XAttribute("pattern","0"),new XAttribute("color",RugRenderer.Colors[0])));
-                    SaveRugs();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(rugs.Elements("rug").Last())){SaveRugs();RefreshViewerGeometry();}
                 }
                 foreach(var rug in rugs.Elements("rug").ToList())
                 {
@@ -846,7 +846,7 @@ namespace BuildYourFurniture
                         new XAttribute("x","500"),new XAttribute("y","500"),
                         new XAttribute("rotation","0"),new XAttribute("screen","0"),
                         new XAttribute("color","#1C1C1E")));
-                    SaveLedTvs();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(tvs.Elements("tv").Last())){SaveLedTvs();RefreshViewerGeometry();}
                 }
                 foreach(var tv in tvs.Elements("tv").ToList())
                 {
@@ -932,7 +932,7 @@ namespace BuildYourFurniture
                         new XAttribute("width",1400),new XAttribute("depth",420),new XAttribute("height",500),
                         new XAttribute("x",500),new XAttribute("y",500),new XAttribute("rotation",0),
                         new XAttribute("finish",0),new XAttribute("color",TvStandRenderer.Colors[0])));
-                    SaveTvStands();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(stands.Elements("stand").Last())){SaveTvStands();RefreshViewerGeometry();}
                 }
                 foreach(var stand in collection.Elements("stand").ToList())
                 {
@@ -1018,7 +1018,7 @@ namespace BuildYourFurniture
                         new XAttribute("x","500"),new XAttribute("y","500"),
                         new XAttribute("rotation","0"),new XAttribute("finish","0"),
                         new XAttribute("color",DoubleBedRenderer.Colors[0])));
-                    SaveBeds();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(beds.Elements("bed").Last())){SaveBeds();RefreshViewerGeometry();}
                 }
                 foreach(var bed in beds.Elements("bed").ToList())
                 {
@@ -1111,7 +1111,7 @@ namespace BuildYourFurniture
                         new XAttribute("x","500"),new XAttribute("y","500"),
                         new XAttribute("rotation","0"),new XAttribute("finish","0"),
                         new XAttribute("color",StandingDeskRenderer.DefaultColor(0))));
-                    SaveDesks();RefreshViewerGeometry();
+                    if(AddFurnitureToActiveRoom(desks.Elements("desk").Last())){SaveDesks();RefreshViewerGeometry();}
                 }
                 foreach(var desk in desks.Elements("desk").ToList())
                 {
