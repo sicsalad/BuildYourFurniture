@@ -65,6 +65,8 @@ namespace BuildYourFurniture
         public static Texture2D Load(string id)
         {
             if(string.IsNullOrWhiteSpace(id))return null;
+            var generated=SurfaceTextureLibrary.Load(id);
+            if(generated!=null)return generated;
             if(id.StartsWith("imported:",StringComparison.Ordinal))
             {
                 string name=id.Substring(9);
