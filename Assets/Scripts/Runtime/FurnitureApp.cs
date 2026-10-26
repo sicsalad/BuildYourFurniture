@@ -35,6 +35,11 @@ namespace BuildYourFurniture
         bool cabinetVisibilityOpen;
         bool apartmentOverview=true;
         bool roomNavigationOpen;
+        XElement selectedFurniture;
+        string furnitureEditError="";
+        bool furnitureDragging;
+        Vector2 furnitureDragOffset;
+        Vector2 lastInteriorPosition=new Vector2(1.33f,1.1f);
         bool sofaEditorOpen;
         bool deskEditorOpen;
         bool bedEditorOpen;
@@ -160,6 +165,7 @@ namespace BuildYourFurniture
             if(laminateEditorOpen)DrawLaminateEditor(barHeight);
             if(GUI.Button(new Rect(2005,8,145,Mathf.Max(30,barHeight-16)),deleteModelsOpen?"Törlés ▲":"Modellek törlése"))deleteModelsOpen=!deleteModelsOpen;
             if(deleteModelsOpen)DrawModelDeletion(barHeight);
+            DrawSelectedFurniture(barHeight);
             if(GUI.Button(new Rect(Mathf.Max(10,Screen.width-535),8,165,Mathf.Max(30,barHeight-16)),"Belépés szobába ▼"))roomNavigationOpen=!roomNavigationOpen;
             if(roomNavigationOpen)
             {
@@ -1445,6 +1451,9 @@ namespace BuildYourFurniture
             if (pendingError != null) { status=pendingError; pendingError=null; }
             if (current != "viewer" || !worldCamera) return;
             var tr = worldCamera.transform;
+            if(!worldCamera.orthographic)
+                lastInteriorPosition=new Vector2(tr.position.x,tr.position.z);
+            HandleFurnitureMouse();
             float horizontal = 0f, forward = 0f, vertical = 0f, wheel = 0f;
             float lookX = 0f, lookY = 0f;
             bool rightDown = false, reset = false, fast = false;
@@ -1517,6 +1526,122 @@ namespace BuildYourFurniture
             cameraYaw = angles.y;
             cameraPitch = Mathf.DeltaAngle(0f, angles.x);
         }
+        void HandleFurnitureMouse()
+        {
+            if(worldCamera==null||plan==null)return;
+            // The object is picked through its rendered mesh colliders, not an invisible proxy.
+            if(Input.GetMouseButtonDown(0)&&Input.mousePosition.y<Screen.height*.90f)
+            {
+                var ray=worldCamera.ScreenPointToRay(Input.mousePosition);
+                RaycastHit[] hits=Physics.RaycastAll(ray,200f);
+                foreach(var hit in hits.OrderBy(h=>h.distance))
+                {
+                    Transform node=hit.collider.transform;
+                    XElement found=null;
+                    while(node!=null&&found==null)
+                    {
+                        string name=node.name;
+                        foreach(var item in FurniturePlacement.Objects(plan))
+                        {
+                            string id=S(item,"id");
+                            if(!string.IsNullOrEmpty(id)&&
+                                (name.EndsWith(" "+id,StringComparison.OrdinalIgnoreCase)||
+                                 name.Equals(id,StringComparison.OrdinalIgnoreCase)))
+                            {found=item;break;}
+                        }
+                        node=node.parent;
+                    }
+                    if(found==null)continue;
+                    selectedFurniture=found;
+                    furnitureEditError="";
+                    furnitureDragging=true;
+                    var plane=new Plane(Vector3.up,new Vector3(0,N(found,"z")/1000f,0));
+                    float distance;
+                    if(plane.Raycast(ray,out distance))
+                    {
+                        Vector3 hitPoint=ray.GetPoint(distance);
+                        furnitureDragOffset=FurniturePlacement.Center(found)-
+                            new Vector2(hitPoint.x,hitPoint.z);
+                    }
+                    else furnitureDragOffset=Vector2.zero;
+                    break;
+                }
+            }
+            if(Input.GetMouseButtonUp(0))furnitureDragging=false;
+            if(!furnitureDragging||selectedFurniture==null||!Input.GetMouseButton(0))return;
+            var mouseRay=worldCamera.ScreenPointToRay(Input.mousePosition);
+            var dragPlane=new Plane(Vector3.up,new Vector3(0,N(selectedFurniture,"z")/1000f,0));
+            float t;
+            if(!dragPlane.Raycast(mouseRay,out t))return;
+            Vector3 hitPosition=mouseRay.GetPoint(t);
+            Vector2 candidate=new Vector2(hitPosition.x,hitPosition.z)+furnitureDragOffset;
+            float oldX=N(selectedFurniture,"x"),oldY=N(selectedFurniture,"y");
+            selectedFurniture.SetAttributeValue("x",SofaNumber(Mathf.Round(candidate.x*1000/10f)*10f));
+            selectedFurniture.SetAttributeValue("y",SofaNumber(Mathf.Round(candidate.y*1000/10f)*10f));
+            string reason;
+            if(FurniturePlacement.Valid(plan,selectedFurniture,out reason))
+            {
+                furnitureEditError="";
+                SaveLaminates();
+                RefreshViewerGeometry();
+            }
+            else
+            {
+                selectedFurniture.SetAttributeValue("x",SofaNumber(oldX));
+                selectedFurniture.SetAttributeValue("y",SofaNumber(oldY));
+                furnitureEditError=reason;
+            }
+        }
+        void DrawSelectedFurniture(float barHeight)
+        {
+            if(selectedFurniture==null)return;
+            var rect=new Rect(12,barHeight+12,300,380);
+            GUI.Box(rect,"Kijelölt bútor: "+S(selectedFurniture,"id"));
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+28,rect.width-20,rect.height-35));
+            GUILayout.Label("Egérrel húzható • 10 mm lépések");
+            foreach(string key in new[]{"x","y","z","rotation","width","depth","length","height"})
+            {
+                if(selectedFurniture.Attribute(key)==null&&key!="z")continue;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(key,GUILayout.Width(70));
+                float currentValue=N(selectedFurniture,key);
+                float step=key=="rotation"?5f:10f;
+                if(GUILayout.Button("−",GUILayout.Width(34)))ChangeFurniture(key,currentValue-step);
+                GUILayout.Label(SofaNumber(currentValue),GUILayout.Width(80));
+                if(GUILayout.Button("+",GUILayout.Width(34)))ChangeFurniture(key,currentValue+step);
+                GUILayout.EndHorizontal();
+            }
+            if(!string.IsNullOrEmpty(furnitureEditError))GUILayout.Label(furnitureEditError);
+            if(GUILayout.Button("Kijelölés megszüntetése"))selectedFurniture=null;
+            GUILayout.EndArea();
+        }
+        void ChangeFurniture(string key,float value)
+        {
+            if(selectedFurniture==null)return;
+            if((key=="width"||key=="depth"||key=="length"||key=="height")&&value<100)
+            {furnitureEditError="A méret legalább 100 mm.";return;}
+            if(key=="z"&&value<0){furnitureEditError="A magasság nem lehet negatív.";return;}
+            string reason;
+            if(FurniturePlacement.TryChange(plan,selectedFurniture,key,value,out reason))
+            {furnitureEditError="";SaveLaminates();RefreshViewerGeometry();}
+            else furnitureEditError=reason;
+        }
+        Vector2 ActiveFurniturePosition()
+        {
+            if(worldCamera!=null&&!worldCamera.orthographic)
+                return new Vector2(worldCamera.transform.position.x,worldCamera.transform.position.z);
+            return lastInteriorPosition;
+        }
+        bool AddFurnitureToActiveRoom(XElement item)
+        {
+            string reason;
+            if(FurniturePlacement.PlaceNew(plan,item,ActiveFurniturePosition(),out reason))
+            {selectedFurniture=item;furnitureEditError="";return true;}
+            item.Remove();
+            furnitureEditError=reason;
+            Debug.LogWarning(reason);
+            return false;
+        }
         void EnterRoomAt(Vector3 from)
         {
             if(worldCamera==null)return;
@@ -1539,6 +1664,7 @@ namespace BuildYourFurniture
             if(pts.Count<3)return;
             Vector2 center=new Vector2(pts.Average(p=>p.x),pts.Average(p=>p.y));
             apartmentOverview=false;
+            lastInteriorPosition=center;
             worldCamera.orthographic=false;
             worldCamera.fieldOfView=65f;
             worldCamera.nearClipPlane=.025f;
