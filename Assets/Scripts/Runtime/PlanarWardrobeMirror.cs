@@ -58,7 +58,6 @@ namespace BuildYourFurniture
             reflectionCamera.enabled=false;
             reflectionCamera.targetTexture=reflectionTexture;
             reflectionCamera.cullingMask=source.cullingMask & ~(1<<31);
-            reflectionCamera.stereoTargetEye=StereoTargetEyeMask.None;
             Vector3 normal=transform.forward;
             Vector3 origin=transform.position;
             Vector3 position=source.transform.position;
