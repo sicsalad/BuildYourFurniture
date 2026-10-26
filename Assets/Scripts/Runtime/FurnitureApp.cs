@@ -154,6 +154,7 @@ namespace BuildYourFurniture
         }
         bool addMenuOpen;
         bool furnitureResizeMode;
+        int furnitureEditMode; // 0 Move, 1 Resize, 2 Rotate
         readonly string[] addKinds={"Gardrób / szekrény","Íróasztal","Franciaágy","Kanapé","TV-állvány","LED TV","Térelválasztó polc","Étkezőasztal","Dohányzóasztal","Szőnyeg"};
         void DrawCabinetVisibilityMenu()
         {
@@ -161,8 +162,12 @@ namespace BuildYourFurniture
             GUI.Box(new Rect(0,0,Screen.width,barHeight),"");
             if(GUI.Button(new Rect(12,8,140,barHeight-16),addMenuOpen?"Bezárás":"+ Hozzáadás"))
             {addMenuOpen=!addMenuOpen;roomNavigationOpen=false;}
-            if(GUI.Button(new Rect(162,8,155,barHeight-16),furnitureResizeMode?"Méretezés":"Mozgatás"))
-                furnitureResizeMode=!furnitureResizeMode;
+            string[] editModes={"Mozgatás","Méretezés","Forgatás"};
+            if(GUI.Button(new Rect(162,8,155,barHeight-16),editModes[furnitureEditMode]))
+            {
+                furnitureEditMode=(furnitureEditMode+1)%3;
+                furnitureResizeMode=furnitureEditMode==1;
+            }
             if(GUI.Button(new Rect(Mathf.Max(325,Screen.width-525),8,165,barHeight-16),"Belépés szobába"))
             {roomNavigationOpen=!roomNavigationOpen;addMenuOpen=false;}
             if(GUI.Button(new Rect(Mathf.Max(500,Screen.width-350),8,165,barHeight-16),"Teljes alaprajz"))
@@ -2028,6 +2033,7 @@ namespace BuildYourFurniture
         }
         string GizmoKey(int i)
         {
+            if(furnitureEditMode==2)return "rotation";
             if(i==3)return "rotation";
             if(i==4)return furnitureResizeMode?"height":"rotation";
             if(!furnitureResizeMode)return i==0?"x":i==1?"y":"z";
@@ -2048,7 +2054,8 @@ namespace BuildYourFurniture
         void DrawFurnitureGizmo()
         {
             if(selectedFurniture==null||worldCamera==null||addMenuOpen)return;
-            string[] labels=furnitureResizeMode?new[]{"X","Y","Z","↻","⇲"}:new[]{"X→","Y→","Z↑","↻","⇲"};
+            string[] labels=furnitureEditMode==2?new[]{"↻X","↻Y","↻Z","↻","↻"}:
+                furnitureResizeMode?new[]{"X","Y","Z","↻","⇲"}:new[]{"X→","Y→","Z↑","↻","⇲"};
             for(int i=0;i<5;i++)
             {
                 Vector3 p=worldCamera.WorldToScreenPoint(GizmoPoint(i));
@@ -2075,10 +2082,26 @@ namespace BuildYourFurniture
         {
             if(activeGizmoHandle<0||selectedFurniture==null)return;
             Vector2 delta=new Vector2(pointer.x,pointer.y)-gizmoStartPointer;
-            float pixels=activeGizmoHandle==1||activeGizmoHandle==2?delta.y:delta.x;
             string key=GizmoKey(activeGizmoHandle);
-            float step=key=="rotation"?1f:10f;
-            float value=gizmoStartValue+Mathf.Round(pixels/8f)*step;
+            float value;
+            if(key=="rotation")
+                value=gizmoStartValue+Mathf.Round(delta.x/5f)*2f;
+            else
+            {
+                // Project mouse displacement onto the selected 3D axis, like RuntimeCabinetDesigner.
+                Vector3 start=GizmoPoint(activeGizmoHandle);
+                Vector3 axis=activeGizmoHandle==0?Vector3.right:
+                    activeGizmoHandle==1?Vector3.forward:Vector3.up;
+                if(activeGizmoHandle==4)axis=Vector3.up;
+                Vector3 p0=worldCamera.WorldToScreenPoint(start);
+                Vector3 p1=worldCamera.WorldToScreenPoint(start+axis*.5f);
+                Vector2 screenAxis=new Vector2(p1.x-p0.x,p1.y-p0.y);
+                float projected=screenAxis.sqrMagnitude<.001f?delta.y:
+                    Vector2.Dot(delta,screenAxis.normalized);
+                float pixelsPerMetre=Mathf.Max(12f,screenAxis.magnitude*2f);
+                float mm=Mathf.Round(projected/pixelsPerMetre*1000f/10f)*10f;
+                value=gizmoStartValue+mm;
+            }
             if((key=="width"||key=="depth"||key=="length"||key=="height")&&value<100)return;
             if(key=="z"&&value<0)return;
             if(Mathf.Abs(N(selectedFurniture,key)-value)<.001f)return;
@@ -2087,7 +2110,6 @@ namespace BuildYourFurniture
             {furnitureEditError="";RefreshViewerGeometry();}
             else furnitureEditError=reason;
         }
-        // Draw the actual 3D oriented bounding box instead of a screen-space rectangle.
         void DrawFurnitureSelectionOutline()
         {
             if(selectedFurniture==null||worldCamera==null||addMenuOpen)return;
