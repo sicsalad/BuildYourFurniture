@@ -32,7 +32,6 @@ namespace BuildYourFurniture
         string status = "";
         readonly XmlDesignEditor xmlEditor = new XmlDesignEditor();
         Texture2D tileTexture;
-        bool cabinetVisibilityOpen;
         bool apartmentOverview=true;
         bool roomNavigationOpen;
         XElement selectedFurniture;
@@ -1390,7 +1389,7 @@ namespace BuildYourFurniture
                     t.fontSize=24; t.fontStyle=FontStyle.Bold; t.alignment=TextAnchor.MiddleCenter; t.raycastTarget = false;
                 }
             }
-            if (screen == "viewer") { cabinetVisibilityOpen=false; BuildGeometry(); }
+            if (screen == "viewer") { BuildGeometry(); }
         }
         void Action(string action)
         {
@@ -1772,11 +1771,11 @@ namespace BuildYourFurniture
                     int doorFinish=Mathf.Clamp((int)N(selectedFurniture,prefix+"Finish",
                         N(selectedFurniture,"doorFinish",0)),0,MirroredWardrobeRenderer.Finishes.Length-1);
                     GUILayout.Label("Ajtó felület / anyag");
-                    int nextFinish=GUILayout.SelectionGrid(doorFinish,MirroredWardrobeRenderer.Finishes,2);
-                    if(nextFinish!=doorFinish)
+                    int nextDoorFinish=GUILayout.SelectionGrid(doorFinish,MirroredWardrobeRenderer.Finishes,2);
+                    if(nextDoorFinish!=doorFinish)
                     {
-                        selectedFurniture.SetAttributeValue(prefix+"Finish",nextFinish);
-                        selectedFurniture.SetAttributeValue(prefix+"Color",MirroredWardrobeRenderer.Colors[nextFinish]);
+                        selectedFurniture.SetAttributeValue(prefix+"Finish",nextDoorFinish);
+                        selectedFurniture.SetAttributeValue(prefix+"Color",MirroredWardrobeRenderer.Colors[nextDoorFinish]);
                         SaveLaminates();RefreshViewerGeometry();
                     }
                     GUILayout.Label("Textúra mód");
