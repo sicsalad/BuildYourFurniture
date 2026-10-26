@@ -9,6 +9,7 @@ namespace BuildYourFurniture
     // The grout is one uninterrupted surface underneath, not cube side faces.
     public static class FloorTileRenderer
     {
+        static readonly System.Collections.Generic.HashSet<string> WarnedTextures=new System.Collections.Generic.HashSet<string>();
         static float N(XElement e, string key, float fallback = 0f)
         {
             float n;
@@ -52,8 +53,14 @@ namespace BuildYourFurniture
                 // Top of grout is below the tile surface by 1 mm, avoiding depth fighting.
                 AddQuad("FloorGrout_" + S(room, "id"), minX, maxX, minZ, maxZ,
                     y - .001f, Vector2.zero, Vector2.one, groutMat, register);
-                Texture2D texture = Resources.Load<Texture2D>(S(finish, "texture", "Textures/helios"));
-                if (!texture) Debug.LogWarning("Floor texture missing: " + S(finish, "texture", "Textures/helios"));
+                string texturePath=S(finish, "texture", "Textures/helios");
+                Texture2D texture = CabinetAppearanceLibrary.Load(texturePath);
+                if (!texture)
+                {
+                    texture=SurfaceTextureLibrary.Load("Szurke gres");
+                    if(WarnedTextures.Add(texturePath))
+                        Debug.LogWarning("Floor texture missing: "+texturePath+"; using offline grey gres fallback.");
+                }
                 Material tileMat = MakeMaterial(tileColor, texture, N(finish, "smoothness", .12f));
                 bool repeatTexture=S(finish,"textureMode","stretch")=="tile";
                 float textureUnit=Mathf.Max(50,N(finish,"textureSize",400))/1000f;
