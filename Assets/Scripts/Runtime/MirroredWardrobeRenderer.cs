@@ -52,7 +52,11 @@ namespace BuildYourFurniture
                 Color color;
                 if(!ColorUtility.TryParseHtmlString(S(e,"color",Colors[finish]),out color))
                     ColorUtility.TryParseHtmlString(Colors[finish],out color);
-                var root=new GameObject("Mirrored wardrobe "+S(e,"id","WARD"));
+                int doorFinish=Mathf.Clamp(Mathf.RoundToInt(N(e,"doorFinish",finish)),0,9);
+                Color doorColor;
+                if(!ColorUtility.TryParseHtmlString(S(e,"doorColor",Colors[doorFinish]),out doorColor))
+                    ColorUtility.TryParseHtmlString(Colors[doorFinish],out doorColor);
+                var root=new GameObject("Sliding wardrobe "+S(e,"id","WARD"));
                 root.transform.position=new Vector3(N(e,"x",500)/1000f,0,N(e,"y",500)/1000f);
                 root.transform.rotation=Quaternion.Euler(0,N(e,"rotation",0),0);
                 register(root);
@@ -61,6 +65,11 @@ namespace BuildYourFurniture
                 var texture=FinishTexture(finish,color);
                 wood.mainTexture=texture;
                 if(wood.HasProperty("_BaseMap"))wood.SetTexture("_BaseMap",texture);
+                var doorMaterial=new Material(Shader.Find("Universal Render Pipeline/Lit")??Shader.Find("Standard"));
+                doorMaterial.color=Color.white;
+                var doorTexture=FinishTexture(doorFinish,doorColor);
+                doorMaterial.mainTexture=doorTexture;
+                if(doorMaterial.HasProperty("_BaseMap"))doorMaterial.SetTexture("_BaseMap",doorTexture);
                 var metal=new Material(Shader.Find("Universal Render Pipeline/Lit")??Shader.Find("Standard"));
                 metal.color=new Color(.45f,.46f,.48f);
                 if(metal.HasProperty("_Metallic"))metal.SetFloat("_Metallic",.85f);
@@ -87,15 +96,23 @@ namespace BuildYourFurniture
                     float x=(i==0?-1:1)*doorW*.49f+(i==0?opening*doorW*.7f:-opening*doorW*.7f);
                     door.transform.localPosition=new Vector3(x,0,-d*.5f-(i==0?.018f:.035f));
                     box("Door frame",new Vector3(0,h*.5f,0),new Vector3(doorW,h-.022f,.024f),metal,door.transform);
-                    var mirror=GameObject.CreatePrimitive(PrimitiveType.Quad);
-                    mirror.name="Live planar mirror";
-                    mirror.transform.SetParent(door.transform,false);
-                    mirror.transform.localPosition=new Vector3(0,h*.5f,-.0135f);
-                    mirror.transform.localRotation=Quaternion.identity; // quad normal faces -Z after 180° Y
-                    mirror.transform.localRotation=Quaternion.Euler(0,180,0);
-                    mirror.transform.localScale=new Vector3(doorW-.025f,h-.05f,1);
-                    var component=mirror.AddComponent<PlanarWardrobeMirror>();
-                    component.Initialize();
+                    bool mirrored=N(e,i==0?"leftMirror":"rightMirror",1)>.5f;
+                    if(mirrored)
+                    {
+                        var mirror=GameObject.CreatePrimitive(PrimitiveType.Quad);
+                        mirror.name="Full door live mirror";
+                        mirror.transform.SetParent(door.transform,false);
+                        mirror.transform.localPosition=new Vector3(0,h*.5f,-.0135f);
+                        mirror.transform.localRotation=Quaternion.Euler(0,180,0);
+                        mirror.transform.localScale=new Vector3(doorW-.006f,h-.028f,1);
+                        var component=mirror.AddComponent<PlanarWardrobeMirror>();
+                        component.Initialize();
+                    }
+                    else
+                    {
+                        box("Full door decorative panel",new Vector3(0,h*.5f,-.014f),
+                            new Vector3(doorW-.006f,h-.028f,.006f),doorMaterial,door.transform);
+                    }
                 }
                 box("Top sliding rail",new Vector3(0,h-.023f,-d*.5f-.018f),new Vector3(w,.022f,.048f),metal,root.transform);
                 box("Bottom sliding rail",new Vector3(0,.024f,-d*.5f-.018f),new Vector3(w,.022f,.048f),metal,root.transform);
