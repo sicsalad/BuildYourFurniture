@@ -6,22 +6,22 @@
   <textures><texture id="T01" color="#FFFFFF" image="" rotation="0" tileWidth="1000" tileHeight="1000" mode="stretch" fromHeight="0" toHeight="3000"/></textures>
   <wallFinishes>
     <finish id="TF01" type="tile" name="TUZZI konyha" wallIds="W01,W02,W03,W04" tileWidth="600" tileHeight="297" thickness="8" startHeight="800" rows="5" groutWidth="2" groutColor="#B6B0A9" surface="glossy" smoothness="0.7" texture="Textures/tuzzi-tile-base64" color="#FFFFFF"/>
-    <finish id="TF02" type="tile" name="Lapis Silver fürdő hosszanti falak" wallIds="W03,W09" tileWidth="610" tileHeight="305" thickness="8" startHeight="0" rows="8" stagger="0.5" endHeight="2150" groutWidth="2" groutColor="#C5C5C5" surface="matte" smoothness="0.18" texture="Textures/lapis-silver" color="#FFFFFF"/>
-    <finish id="TF03" type="tile" name="Lamina fürdő hátsó fal állítva" wallIds="W10" tileWidth="300" tileHeight="600" thickness="8" startHeight="0" rows="4" stagger="0" endHeight="2150" groutWidth="2" groutColor="#D3D0C9" surface="matte" smoothness="0.2" texture="Textures/lamina" color="#FFFFFF"/>
+    <finish id="TF02" type="tile" name="Lapis Silver fürdő hosszanti falak" wallIds="W03,W09" side="reverse" textureUrl="https://www.bauhaus.hu/media/catalog/product/cache/d82da678bef4115b75ba46040b55e40a/p/a/padlolap-es-greslaplapis-silver-greslap-szurke-30-5x61cm-1-5m232523449-32523449-a-1.webp" tileWidth="610" tileHeight="305" thickness="8" startHeight="0" rows="8" stagger="0.5" endHeight="2150" groutWidth="2" groutColor="#C5C5C5" surface="matte" smoothness="0.18" texture="Textures/lapis-silver" color="#FFFFFF"/>
+    <finish id="TF03" type="tile" name="Lamina fürdő hátsó fal állítva" wallIds="W10" side="reverse" textureUrl="https://www.bauhaus.hu/media/catalog/product/cache/d82da678bef4115b75ba46040b55e40a/3/1/31702005_a_1.webp" tileWidth="300" tileHeight="600" thickness="8" startHeight="0" rows="4" stagger="0" endHeight="2150" groutWidth="2" groutColor="#D3D0C9" surface="matte" smoothness="0.2" texture="Textures/lamina" color="#FFFFFF"/>
   </wallFinishes>
   <models><model id="M01" type="castIronRadiator" name="Ontottvas tagos radiator" sections="12" color="#D6D1BF" /><model id="M02" type="bottomFreezerRefrigerator" name="Szurke alulfagyasztos hutoszekreny" width="550" height="1824" depth="557" color="#77777B" sideColor="#66666B" topDoorHeight="940" bottomDoorHeight="800" doorGap="22" handleColor="#252529" footColor="#29292B" /><model id="M03" type="texturedAppliance" name="Hisense mosogep" width="600" height="850" depth="600" color="#303034" texture="Textures/mosogep" /> <model id="M04" type="texturedAppliance" name="Electrolux suto" width="600" height="600" depth="560" color="#111114" texture="Textures/suto" /> <model id="M05" type="texturedHob" name="Gorenje gazfozolap" width="600" height="45" depth="520" color="#222226" texture="Textures/tuzhely" /> <model id="M06" type="texturedCountertop" name="Fa munkalap" width="2050" height="38" depth="600" color="#C49B72" texture="Textures/munkalap" /><model id="M07" type="stainlessDoubleSink" name="Ketmedences csepegtetos inox mosogato" width="780" depth="490" largeBasinDepth="160" smallBasinDepth="130" largeBowlRatio="0.48" smallBowlRatio="0.24" drainerRatio="0.28" color="#C3C7C9" drainColor="#53585A" smoothness="0.82" /></models>
   <floorFinishes>
     <finish id="FL01" roomId="R01" type="tile" name="HELIOS konyha" productCode="29850255" tileWidth="600" tileHeight="200" thickness="8.3" direction="y" stagger="0.5" groutWidth="2" groutColor="#B6B0A9" color="#FFFFFF" texture="Textures/helios" surface="matte" smoothness="0.12"/>
     <finish id="FL02" roomId="R04" type="tile" name="HELIOS előszoba" productCode="29850255" tileWidth="600" tileHeight="200" thickness="8.3" direction="y" stagger="0.5" groutWidth="2" groutColor="#B6B0A9" color="#FFFFFF" texture="Textures/helios" surface="matte" smoothness="0.12"/>
     <finish id="FL03" roomId="R05" type="tile" name="HELIOS kamra" productCode="29850255" tileWidth="600" tileHeight="200" thickness="8.3" direction="y" stagger="0.5" groutWidth="2" groutColor="#B6B0A9" color="#FFFFFF" texture="Textures/helios" surface="matte" smoothness="0.12"/>
-    <finish id="FL04" roomId="R03" type="tile" name="Canyon Silver fürdő" tileWidth="600" tileHeight="300" thickness="8" direction="x" stagger="0.5" groutWidth="2" groutColor="#C8C8C8" color="#FFFFFF" texture="Textures/canyon-silver" surface="matte" smoothness="0.12"/>
+    <finish id="FL04" roomId="R03" type="tile" name="Canyon Silver fürdő" textureUrl="https://www.bauhaus.hu/media/catalog/product/cache/d82da678bef4115b75ba46040b55e40a/3/3/33801494_a_1.webp" tileWidth="600" tileHeight="300" thickness="8" direction="x" stagger="0.5" groutWidth="2" groutColor="#C8C8C8" color="#FFFFFF" texture="Textures/canyon-silver" surface="matte" smoothness="0.12"/>
   </floorFinishes>
   <laminates>
     <laminate id="LAM01" target="floor" roomId="R02" boardLength="1200" boardWidth="190" thickness="8" layout="offset" grout="1" groutColor="#C4B79E" finish="2" color="#D9C5A4"/>
   </laminates>
   <rooms>
     <room id="R01" name="Konyha" floorHeight="0" heightStart="0" heightEnd="3000"><point id="PT01" x="0" y="0"/><point id="PT02" x="2660" y="0"/><point id="PT03" x="2660" y="2200"/><point id="PT04" x="0" y="2200"/></room>
-    <room id="R02" name="Nagy szoba" floorHeight="0" heightStart="0" heightEnd="3000"><point x="-1570" y="3320"/><point x="2800" y="3320"/><point x="2800" y="8230"/><point x="-1570" y="8230"/></room>
+    <room id="R02" name="Nagy szoba" floorHeight="0" heightStart="0" heightEnd="3000"><point x="-1570" y="3520"/><point x="2800" y="3520"/><point x="2800" y="8430"/><point x="-1570" y="8430"/></room>
     <room id="R03" name="Fürdőszoba" floorHeight="0" heightStart="0" heightEnd="3000"><point x="0" y="2200"/><point x="2460" y="2200"/><point x="2460" y="3320"/><point x="0" y="3320"/></room>
     <room id="R04" name="Előszoba" floorHeight="0" heightStart="0" heightEnd="3000"><point x="-1150" y="0"/><point x="0" y="0"/><point x="0" y="3520"/><point x="-1570" y="3520"/><point x="-1570" y="2200"/><point x="-1150" y="2200"/></room>
     <room id="R05" name="Kamra" floorHeight="0" heightStart="0" heightEnd="3000"><point x="-1950" y="0"/><point x="-1150" y="0"/><point x="-1150" y="1030"/><point x="-1950" y="1030"/></room>
@@ -31,20 +31,20 @@
     <wall id="W02" x="2660" y="0" x1="2660" y1="2200" heightStart="0" heightEnd="3000" thickness="120" leftTexture="T01" rightTexture="T01"/>
     <wall id="W03" x="2660" y="2200" x1="0" y1="2200" heightStart="0" heightEnd="3000" thickness="120" leftTexture="T01" rightTexture="T01"/>
     <wall id="W04" x="0" y="2200" x1="0" y1="0" heightStart="0" heightEnd="3000" thickness="120" leftTexture="T01" rightTexture="T01"/>
-    <wall id="W05" x="-1570" y="3320" x1="2800" y1="3320" heightStart="0" heightEnd="3000" thickness="120"/>
-    <wall id="W06" x="2800" y="3320" x1="2800" y1="8230" heightStart="0" heightEnd="3000" thickness="120"/>
-    <wall id="W07" x="2800" y="8230" x1="-1570" y1="8230" heightStart="0" heightEnd="3000" thickness="120"/>
-    <wall id="W08" x="-1570" y="8230" x1="-1570" y1="3320" heightStart="0" heightEnd="3000" thickness="120"/>
+    <wall id="W05" x="-1570" y="3520" x1="2800" y1="3520" heightStart="0" heightEnd="3000" thickness="120"/>
+    <wall id="W06" x="2800" y="3520" x1="2800" y1="8430" heightStart="0" heightEnd="3000" thickness="120"/>
+    <wall id="W07" x="2800" y="8430" x1="-1570" y1="8430" heightStart="0" heightEnd="3000" thickness="120"/>
+    <wall id="W08" x="-1570" y="8430" x1="-1570" y1="3520" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W09" x="0" y="3320" x1="2460" y1="3320" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W10" x="2460" y="3320" x1="2460" y1="2200" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W11" x="-1150" y="0" x1="-1150" y1="2200" heightStart="0" heightEnd="3000" thickness="120"/>
-    <wall id="W12" x="-1570" y="3320" x1="0" y1="3320" heightStart="0" heightEnd="3000" thickness="120"/>
+    <wall id="W12" x="-1570" y="3520" x1="0" y1="3520" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W13" x="-1150" y="0" x1="0" y1="0" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W14" x="-1950" y="0" x1="-1150" y1="0" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W15" x="-1950" y="0" x1="-1950" y1="1030" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W16" x="-1950" y="1030" x1="-1150" y1="1030" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W17" x="0" y="2200" x1="0" y1="3320" heightStart="0" heightEnd="3000" thickness="120"/>
-    <wall id="W18" x="-1570" y="2200" x1="-1570" y1="3320" heightStart="0" heightEnd="3000" thickness="120"/>
+    <wall id="W18" x="-1570" y="2200" x1="-1570" y1="3520" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W19" x="-1570" y="2200" x1="-1150" y1="2200" heightStart="0" heightEnd="3000" thickness="120"/>
   </walls>
   <doors>
