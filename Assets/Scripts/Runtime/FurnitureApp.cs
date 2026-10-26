@@ -172,7 +172,7 @@ namespace BuildYourFurniture
             if(GUI.Button(new Rect(325,8,140,barHeight-16),
                 surfaceEditor.Visible?"Felületek bezárása":"Fal / padló / csempe"))
             {surfaceEditor.Visible=!surfaceEditor.Visible;addMenuOpen=false;}
-            if(GUI.Button(new Rect(472,8,125,barHeight-16),
+            if(GUI.Button(new Rect(12,barHeight+8,125,30),
                 showSurfaceLabels?"Felirat: BE":"Felirat: KI"))
                 showSurfaceLabels=!showSurfaceLabels;
             if(GUI.Button(new Rect(Mathf.Max(325,Screen.width-525),8,165,barHeight-16),"Belépés szobába"))
