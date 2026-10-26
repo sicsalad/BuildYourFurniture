@@ -34,7 +34,7 @@ namespace BuildYourFurniture
             hint.fontSize=44;hint.characterSize=.006f;
             hint.anchor=TextAnchor.MiddleCenter;hint.alignment=TextAlignment.Center;
             hint.color=Color.white;
-            hint.text="BuildYourFurniture VR\nBal kar: mozgas | Jobb kar: fordulas\nJobb ravasz: kijeloles | B: menu";
+            hint.text="BuildYourFurniture VR\nBal kar: mozgas | Jobb kar: fordulas\nJobb ravasz: targy megnevezese";
         }
         void OnEnable(){RefreshDevices();}
         void RefreshDevices()
@@ -99,7 +99,11 @@ namespace BuildYourFurniture
         {
             if(pointer!=null)Destroy(pointer.gameObject);
             if(hint!=null)Destroy(hint.gameObject);
-            if(origin!=null)Destroy(origin.gameObject);
+            if(origin!=null)
+            {
+                transform.SetParent(null,true);
+                Destroy(origin.gameObject);
+            }
         }
     }
 }
