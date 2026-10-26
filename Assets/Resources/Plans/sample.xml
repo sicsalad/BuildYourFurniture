@@ -38,7 +38,6 @@
     <wall id="W09" x="0" y="3320" x1="2460" y1="3320" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W10" x="2460" y="3320" x1="2460" y1="2200" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W11" x="-1150" y="0" x1="-1150" y1="2200" heightStart="0" heightEnd="3000" thickness="120"/>
-    <wall id="W12" x="-1570" y="3520" x1="0" y1="3520" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W13" x="-1150" y="0" x1="0" y1="0" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W14" x="-1950" y="0" x1="-1150" y1="0" heightStart="0" heightEnd="3000" thickness="120"/>
     <wall id="W15" x="-1950" y="0" x1="-1950" y1="1030" heightStart="0" heightEnd="3000" thickness="120"/>
