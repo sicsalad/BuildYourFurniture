@@ -323,6 +323,26 @@ namespace BuildYourFurniture
                     for(int i=0;i<MirroredWardrobeRenderer.Finishes.Length;i++)
                         if(GUILayout.Toggle(i==selected,MirroredWardrobeRenderer.Finishes[i],"Button")&&i!=selected)
                         {wardrobe.SetAttributeValue("finish",i);wardrobe.SetAttributeValue("color",MirroredWardrobeRenderer.Colors[i]);selected=i;changed=true;}
+                    GUILayout.Label("Ajtók teljes felülete");
+                    foreach(string side in new[]{"leftMirror","rightMirror"})
+                    {
+                        bool previous=N(wardrobe,side,1)>.5f;
+                        bool next=GUILayout.Toggle(previous,side=="leftMirror"?"Bal ajtó tükör":"Jobb ajtó tükör");
+                        if(previous!=next){wardrobe.SetAttributeValue(side,next?1:0);changed=true;}
+                    }
+                    GUILayout.Label("Nem tükrös ajtó textúrája");
+                    int doorFinish=Mathf.Clamp(Mathf.RoundToInt(N(wardrobe,"doorFinish",0)),0,9);
+                    for(int i=0;i<MirroredWardrobeRenderer.Finishes.Length;i++)
+                        if(GUILayout.Toggle(i==doorFinish,MirroredWardrobeRenderer.Finishes[i],"Button")&&i!=doorFinish)
+                        {wardrobe.SetAttributeValue("doorFinish",i);wardrobe.SetAttributeValue("doorColor",MirroredWardrobeRenderer.Colors[i]);doorFinish=i;changed=true;}
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Ajtó színe HEX",GUILayout.Width(185));
+                    string oldDoor=S(wardrobe,"doorColor",MirroredWardrobeRenderer.Colors[doorFinish]);
+                    string newDoor=GUILayout.TextField(oldDoor);
+                    Color parsedDoor;
+                    if(newDoor!=oldDoor&&ColorUtility.TryParseHtmlString(newDoor,out parsedDoor))
+                    {wardrobe.SetAttributeValue("doorColor",newDoor);changed=true;}
+                    GUILayout.EndHorizontal();
                     if(GUILayout.Button("Gardrób törlése")){wardrobe.Remove();changed=true;}
                     if(changed){SaveWardrobes();RefreshViewerGeometry();}
                 }
