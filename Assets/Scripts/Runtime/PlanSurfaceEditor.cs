@@ -143,7 +143,7 @@ namespace BuildYourFurniture
             if(next==old)return false;
             item.SetAttributeValue(key,colors[next]);return true;
         }
-        static bool EditAppearance(XElement item,bool wall)
+        bool EditAppearance(XElement item,bool wall)
         {
             bool changed=false;
             GUILayout.Label("Textúra a projektből");
