@@ -1605,6 +1605,23 @@ namespace BuildYourFurniture
             cameraYaw = angles.y;
             cameraPitch = Mathf.DeltaAngle(0f, angles.x);
         }
+        bool IsPointerOverEditor(Vector3 pointer)
+        {
+            float barHeight=Mathf.Max(48,Screen.height*.085f);
+            Vector2 gui=new Vector2(pointer.x,Screen.height-pointer.y);
+            if(gui.y<=barHeight)return true;
+            if(gui.x<150&&gui.y<barHeight+45)return true; // surface-label toggle
+            if(selectedFurniture!=null&&!surfaceEditor.Visible&&!addMenuOpen&&
+                new Rect(12,barHeight+12,330,Mathf.Min(Screen.height-barHeight-20,740)).Contains(gui))return true;
+            if(surfaceEditor.Visible)
+            {
+                float width=Mathf.Min(430,Screen.width*.43f);
+                if(new Rect(Screen.width-width-8,56,width,Mathf.Max(120,Screen.height-65)).Contains(gui))return true;
+            }
+            if(addMenuOpen&&new Rect(12,barHeight+4,280,Mathf.Min(Screen.height-barHeight-45,addKinds.Length*38+45)).Contains(gui))return true;
+            if(roomNavigationOpen&&gui.x>=Mathf.Max(325,Screen.width-525)&&gui.x<=Mathf.Max(325,Screen.width-525)+165)return true;
+            return false;
+        }
         void HandleFurnitureMouse()
         {
             if(worldCamera==null||plan==null)return;
@@ -1625,6 +1642,7 @@ namespace BuildYourFurniture
 #else
             return;
 #endif
+            if(TexturePickerPopup.IsOpen||IsPointerOverEditor(pointer))return;
             int handle;
             if(pressed&&HitGizmo(pointer,out handle))
             {
@@ -1810,25 +1828,12 @@ namespace BuildYourFurniture
                     bool rotated=N(selectedFurniture,prefix+"TextureRotation")>=45;
                     int rotation=GUILayout.SelectionGrid(rotated?1:0,new[]{"0°","90°"},2);
                     if(rotation!=(rotated?1:0))ChangeDoorProperty(prefix+"TextureRotation",rotation*90);
-                    GUILayout.Label("Textúra kiválasztása");
                     string key=prefix+"Texture";
-                    string previous=S(selectedFurniture,key);
-                    var textureChoices=Resources.LoadAll<Texture2D>("Textures")
-                        .Where(t=>t!=null).Select(t=>t.name)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(name=>name,StringComparer.OrdinalIgnoreCase).ToArray();
-                    string[] labels=new[]{"Generált anyagminta"}.Concat(textureChoices).ToArray();
-                    int currentTexture=Array.FindIndex(textureChoices,
-                        name=>string.Equals(name,previous,StringComparison.OrdinalIgnoreCase));
-                    int chosenTexture=GUILayout.SelectionGrid(currentTexture+1,labels,2);
-                    if(chosenTexture!=currentTexture+1)
+                    TexturePickerPopup.Button("Ajtó textúra",S(selectedFurniture,key),id=>
                     {
-                        selectedFurniture.SetAttributeValue(key,
-                            chosenTexture==0?"":textureChoices[chosenTexture-1]);
+                        selectedFurniture.SetAttributeValue(key,id);
                         SaveLaminates();RefreshViewerGeometry();
-                    }
-                    if(textureChoices.Length==0)
-                        GUILayout.Label("Nincs Texture2D az Assets/Resources/Textures mappában.");
+                    });
                     GUILayout.Label("Felület fénye");
                     string glossKey=prefix+"Smoothness";
                     float gloss=Mathf.Clamp01(N(selectedFurniture,glossKey,.35f));
@@ -1858,14 +1863,11 @@ namespace BuildYourFurniture
                 selectedFurniture.SetAttributeValue("color",colors[nextColor]);
                 SaveLaminates();RefreshViewerGeometry();
             }
-            GUILayout.Label("Textúra (Resources/Textures)");
-            string textureName=S(selectedFurniture,"texture","");
-            string editedTexture=GUILayout.TextField(textureName);
-            if(editedTexture!=textureName)
+            TexturePickerPopup.Button("Textúra",S(selectedFurniture,"texture"),id=>
             {
-                selectedFurniture.SetAttributeValue("texture",editedTexture);
+                selectedFurniture.SetAttributeValue("texture",id);
                 SaveLaminates();RefreshViewerGeometry();
-            }
+            });
             if(GUILayout.Button("Duplikálás (+20 cm eltolás)"))DuplicateSelectedFurniture();
             if(!string.IsNullOrEmpty(furnitureEditError))GUILayout.Label(furnitureEditError);
             if(GUILayout.Button("Kijelölés megszüntetése")){selectedFurniture=null;furnitureDragging=false;}
@@ -2456,6 +2458,7 @@ namespace BuildYourFurniture
                 DrawFurnitureGizmo();
                 if(showSurfaceLabels)DrawSurfaceLabels();
                 DrawCabinetVisibilityMenu();
+                TexturePickerPopup.Draw();
             }
             if(current=="editor")xmlEditor.Draw();
             if(!string.IsNullOrEmpty(status))GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status);
