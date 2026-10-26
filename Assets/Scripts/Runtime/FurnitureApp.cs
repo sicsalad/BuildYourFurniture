@@ -1534,6 +1534,7 @@ namespace BuildYourFurniture
             var tr = worldCamera.transform;
             if(!worldCamera.orthographic)
                 lastInteriorPosition=new Vector2(tr.position.x,tr.position.z);
+            if(UnityEngine.XR.XRSettings.isDeviceActive)return; // QuestRoomController owns XR pose and Touch movement.
             HandleFurnitureMouse();
             float horizontal = 0f, forward = 0f, vertical = 0f, wheel = 0f;
             float lookX = 0f, lookY = 0f;
@@ -2093,6 +2094,12 @@ namespace BuildYourFurniture
             var go = new GameObject("Viewer Camera",typeof(Camera),typeof(AudioListener));
             worldCamera=go.GetComponent<Camera>(); worldCamera.depth=0;
             go.tag="MainCamera";
+            if(UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                go.AddComponent<QuestRoomController>();
+                worldCamera.orthographic=false;
+                worldCamera.nearClipPlane=.05f;
+            }
             go.transform.position=new Vector3(1.33f,2.8f,-4.5f);
             go.transform.LookAt(new Vector3(1.33f,1.1f,1.1f));
             if(apartmentOverview&&plan?.Root?.Element("rooms")?.Elements("room").Skip(1).Any()==true)ApplyApartmentOverview(worldCamera);
@@ -2476,7 +2483,7 @@ namespace BuildYourFurniture
         }
         void OnGUI()
         {
-            if(current=="viewer")
+            if(current=="viewer"&&!UnityEngine.XR.XRSettings.isDeviceActive)
             {
                 DrawFurnitureSelectionOutline();
                 DrawFurnitureGizmo();
