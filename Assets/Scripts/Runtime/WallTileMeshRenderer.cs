@@ -111,6 +111,9 @@ namespace BuildYourFurniture
                 foreach (var wall in Items(root,"walls","wall"))
                 {
                     string wallId = S(wall,"id");
+                    string selectedWalls=S(finish,"wallIds");
+                    if(!string.IsNullOrEmpty(selectedWalls)&&
+                       !selectedWalls.Split(',').Any(id=>id.Trim()==wallId))continue;
                     Vector2 a = new Vector2(N(wall,"x"),N(wall,"y"))/1000f;
                     Vector2 b = new Vector2(N(wall,"x1"),N(wall,"y1"))/1000f;
                     Vector2 diff = b-a;
@@ -126,10 +129,13 @@ namespace BuildYourFurniture
                     float groutDepth=.0005f, tileDepth=depth+.0015f;
                     for (int row=0; row<rows; row++)
                     {
-                        float y0=startY+row*height, y1=y0+height;
-                        for (int col=0; col<Mathf.CeilToInt(length/width); col++)
+                        float y0=startY+row*height, y1=Mathf.Min(y0+height,N(finish,"endHeight",startY*1000f+rows*height*1000f)/1000f);
+                        if(y1<=y0)break;
+                        float shift=(row%2)*Mathf.Repeat(N(finish,"stagger",0),1f)*width;
+                        for (int col=-1; col<Mathf.CeilToInt(length/width)+1; col++)
                         {
-                            float x0=col*width, x1=Mathf.Min(length,x0+width);
+                            float x0=Mathf.Max(0,col*width+shift), x1=Mathf.Min(length,(col+1)*width+shift);
+                            if(x1<=x0)continue;
                             var xs=new List<float>{x0,x1};
                             var ys=new List<float>{y0,y1};
                             foreach(var o in cuts)
