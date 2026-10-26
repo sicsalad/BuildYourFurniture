@@ -2035,11 +2035,59 @@ namespace BuildYourFurniture
             TableRenderer.Build(renderPlan, element=>geometry.Add(element));
             MirroredWardrobeRenderer.Build(renderPlan, element=>geometry.Add(element));
             DecorationRenderer.Build(renderPlan, element=>geometry.Add(element));
+            ApplyFurnitureAppearance();
             PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
                 element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
             }, element => geometry.Add(element));
+        }
+        void ApplyFurnitureAppearance()
+        {
+            if(plan==null)return;
+            foreach(var item in FurniturePlacement.Objects(plan))
+            {
+                string id=S(item,"id");
+                if(string.IsNullOrEmpty(id))continue;
+                string hex=S(item,"color");
+                string textureName=S(item,"texture");
+                if(string.IsNullOrEmpty(hex)&&string.IsNullOrEmpty(textureName))continue;
+                Color tint;
+                bool hasTint=ColorUtility.TryParseHtmlString(hex,out tint);
+                Texture2D texture=null;
+                if(!string.IsNullOrEmpty(textureName))
+                {
+                    string resource=textureName.Replace("\\","/");
+                    if(resource.StartsWith("Textures/",StringComparison.OrdinalIgnoreCase))
+                        resource=resource.Substring("Textures/".Length);
+                    texture=Resources.Load<Texture2D>("Textures/"+resource);
+                }
+                foreach(var root in geometry)
+                {
+                    if(root==null)continue;
+                    if(!root.name.EndsWith(" "+id,StringComparison.OrdinalIgnoreCase)&&
+                       !root.name.Equals(id,StringComparison.OrdinalIgnoreCase))continue;
+                    foreach(var renderer in root.GetComponentsInChildren<Renderer>())
+                    {
+                        if(renderer is LineRenderer)continue;
+                        // Keep live mirror materials and metal fittings intact.
+                        if(renderer.gameObject.name.IndexOf("mirror",StringComparison.OrdinalIgnoreCase)>=0||
+                           renderer.gameObject.name.IndexOf("metal",StringComparison.OrdinalIgnoreCase)>=0||
+                           renderer.gameObject.name.IndexOf("rail",StringComparison.OrdinalIgnoreCase)>=0)continue;
+                        var mat=renderer.material;
+                        if(texture!=null)
+                        {
+                            mat.mainTexture=texture;
+                            if(mat.HasProperty("_BaseMap"))mat.SetTexture("_BaseMap",texture);
+                        }
+                        if(hasTint)
+                        {
+                            mat.color=tint;
+                            if(mat.HasProperty("_BaseColor"))mat.SetColor("_BaseColor",tint);
+                        }
+                    }
+                }
+            }
         }
         GameObject Cube(string name,Vector3 pos,Vector3 scale,Color color)
         {
