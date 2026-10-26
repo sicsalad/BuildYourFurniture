@@ -53,6 +53,7 @@ namespace BuildYourFurniture
             saveTextureChange=saveAndRefresh;
             float width=Mathf.Min(430,Screen.width*.43f);
             var rect=new Rect(Screen.width-width-8,56,width,Mathf.Max(120,Screen.height-65));
+            FurnitureApp.DrawOpaquePanel(rect);
             GUI.Box(rect,"Felületek: falak / csempék / padlók");
             GUILayout.BeginArea(new Rect(rect.x+10,rect.y+26,rect.width-20,rect.height-36));
             scroll=GUILayout.BeginScrollView(scroll);
