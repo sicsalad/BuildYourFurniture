@@ -241,6 +241,89 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawTvStandEditor(float barHeight)
+        {
+            var area=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(area,"TV-állványok");
+            GUILayout.BeginArea(new Rect(area.x+10,area.y+24,area.width-20,area.height-34));
+            tvStandEditorScroll=GUILayout.BeginScrollView(tvStandEditorScroll);
+            if(plan!=null)
+            {
+                var collection=plan.Root.Element("tvStands");
+                if(collection==null){collection=new XElement("tvStands");plan.Root.Add(collection);}
+                if(GUILayout.Button("+ TV-állvány (140 cm)"))
+                {
+                    int i=1;
+                    while(collection.Elements("stand").Any(s=>S(s,"id")=="TV"+i))i++;
+                    collection.Add(new XElement("stand",new XAttribute("id","TV"+i),
+                        new XAttribute("width",1400),new XAttribute("depth",420),new XAttribute("height",500),
+                        new XAttribute("x",500),new XAttribute("y",500),new XAttribute("rotation",0),
+                        new XAttribute("finish",0),new XAttribute("color",TvStandRenderer.Colors[0])));
+                    SaveTvStands();RefreshViewerGeometry();
+                }
+                foreach(var stand in collection.Elements("stand").ToList())
+                {
+                    GUILayout.Label(S(stand,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(string key in new[]{"width","depth","height","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label(key,GUILayout.Width(110));
+                        string previous=S(stand,key,"0");
+                        string next=GUILayout.TextField(previous);
+                        float number;
+                        if(next!=previous&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out number))
+                        {
+                            if(key=="width")number=Mathf.Max(600,number);
+                            if(key=="depth"||key=="height")number=Mathf.Max(250,number);
+                            stand.SetAttributeValue(key,SofaNumber(number));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Szín HEX",GUILayout.Width(110));
+                    string color=S(stand,"color",TvStandRenderer.Colors[0]);
+                    string nextColor=GUILayout.TextField(color);
+                    Color parsed;
+                    if(nextColor!=color&&ColorUtility.TryParseHtmlString(nextColor,out parsed))
+                    {stand.SetAttributeValue("color",nextColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    int selected=Mathf.Clamp(Mathf.RoundToInt(N(stand,"finish",0)),0,9);
+                    foreach(int i in System.Linq.Enumerable.Range(0,TvStandRenderer.Finishes.Length))
+                    {
+                        if(GUILayout.Toggle(i==selected,TvStandRenderer.Finishes[i],"Button")&&i!=selected)
+                        {
+                            stand.SetAttributeValue("finish",i);
+                            stand.SetAttributeValue("color",TvStandRenderer.Colors[i]);
+                            changed=true;selected=i;
+                        }
+                    }
+                    if(GUILayout.Button("TV-állvány törlése")){stand.Remove();changed=true;}
+                    if(changed){SaveTvStands();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveTvStands()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="TV-állvány mentve.";
+            }
+            catch(Exception ex){status=ex.Message;}
+        }
         void DrawBedEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
