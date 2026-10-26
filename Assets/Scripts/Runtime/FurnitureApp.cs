@@ -38,6 +38,10 @@ namespace BuildYourFurniture
         XElement selectedFurniture;
         string furnitureEditError="";
         bool furnitureDragging;
+        int activeGizmoHandle=-1;
+        Vector2 gizmoStartPointer;
+        float gizmoStartValue;
+        bool rebuildingViewer;
         Vector2 furnitureDragOffset;
         Vector2 lastInteriorPosition=new Vector2(1.33f,1.1f);
         bool sofaEditorOpen;
@@ -137,7 +141,8 @@ namespace BuildYourFurniture
             geometry.Clear();
             if(worldCamera)Destroy(worldCamera.gameObject);
             worldCamera=null;
-            BuildGeometry();
+            rebuildingViewer=true;
+            try{BuildGeometry();}finally{rebuildingViewer=false;}
             if(worldCamera)
             {
                 worldCamera.transform.position=previousPosition;
@@ -1590,6 +1595,21 @@ namespace BuildYourFurniture
 #else
             return;
 #endif
+            int handle;
+            if(pressed&&HitGizmo(pointer,out handle))
+            {
+                activeGizmoHandle=handle;
+                gizmoStartPointer=new Vector2(pointer.x,pointer.y);
+                gizmoStartValue=N(selectedFurniture,GizmoKey(handle));
+                furnitureDragging=false;
+                return;
+            }
+            if(activeGizmoHandle>=0)
+            {
+                if(released){SaveLaminates();activeGizmoHandle=-1;}
+                else if(held)DragGizmo(pointer);
+                return;
+            }
             // The object is picked through its rendered mesh colliders, not an invisible proxy.
             if(pressed&&pointer.y<Screen.height*.90f&&pointer.x>330f)
             {
@@ -1855,7 +1875,7 @@ namespace BuildYourFurniture
             go.transform.LookAt(new Vector3(1.33f,1.1f,1.1f));
             if(apartmentOverview&&plan?.Root?.Element("rooms")?.Elements("room").Skip(1).Any()==true)ApplyApartmentOverview(worldCamera);
             else ApplyViewerStart(go.transform);
-            RestoreViewerCamera();
+            if(!rebuildingViewer)RestoreViewerCamera();
             cameraHome = go.transform.position;
             cameraHomeRotation = go.transform.rotation;
             SyncCameraAngles();
@@ -1991,6 +2011,67 @@ namespace BuildYourFurniture
             else status="Export: "+path;
             Debug.Log(status);
         }
+        string GizmoKey(int i)
+        {
+            if(i==3)return "rotation";
+            if(i==4)return furnitureResizeMode?"height":"rotation";
+            if(!furnitureResizeMode)return i==0?"x":i==1?"y":"z";
+            return i==0?"width":i==1?(selectedFurniture.Attribute("length")!=null?"length":"depth"):"height";
+        }
+        Vector3 GizmoPoint(int i)
+        {
+            Vector2 center=FurniturePlacement.Center(selectedFurniture);
+            Vector2 size=FurniturePlacement.Size(selectedFurniture);
+            float y=N(selectedFurniture,"z")/1000f;
+            float top=y+FurniturePlacement.Height(selectedFurniture);
+            if(i==0)return new Vector3(center.x+size.x*.5f+.2f,y+.15f,center.y);
+            if(i==1)return new Vector3(center.x,y+.15f,center.y+size.y*.5f+.2f);
+            if(i==2)return new Vector3(center.x,top+.25f,center.y);
+            if(i==3)return new Vector3(center.x-size.x*.5f-.25f,top,center.y);
+            return new Vector3(center.x+size.x*.5f+.2f,top,center.y+size.y*.5f+.2f);
+        }
+        void DrawFurnitureGizmo()
+        {
+            if(selectedFurniture==null||worldCamera==null||addMenuOpen)return;
+            string[] labels=furnitureResizeMode?new[]{"X","Y","Z","↻","⇲"}:new[]{"X→","Y→","Z↑","↻","⇲"};
+            for(int i=0;i<5;i++)
+            {
+                Vector3 p=worldCamera.WorldToScreenPoint(GizmoPoint(i));
+                if(p.z<=0)continue;
+                var old=GUI.color;
+                GUI.color=i==0?Color.red:i==1?Color.green:i==2?Color.cyan:Color.yellow;
+                GUI.Box(new Rect(p.x-20,Screen.height-p.y-20,40,40),labels[i]);
+                GUI.color=old;
+            }
+        }
+        bool HitGizmo(Vector3 pointer,out int handle)
+        {
+            handle=-1;
+            if(selectedFurniture==null||worldCamera==null)return false;
+            for(int i=0;i<5;i++)
+            {
+                Vector3 p=worldCamera.WorldToScreenPoint(GizmoPoint(i));
+                if(p.z>0&&Vector2.Distance(new Vector2(p.x,p.y),new Vector2(pointer.x,pointer.y))<23f)
+                {handle=i;return true;}
+            }
+            return false;
+        }
+        void DragGizmo(Vector3 pointer)
+        {
+            if(activeGizmoHandle<0||selectedFurniture==null)return;
+            Vector2 delta=new Vector2(pointer.x,pointer.y)-gizmoStartPointer;
+            float pixels=activeGizmoHandle==1||activeGizmoHandle==2?delta.y:delta.x;
+            string key=GizmoKey(activeGizmoHandle);
+            float step=key=="rotation"?1f:10f;
+            float value=gizmoStartValue+Mathf.Round(pixels/8f)*step;
+            if((key=="width"||key=="depth"||key=="length"||key=="height")&&value<100)return;
+            if(key=="z"&&value<0)return;
+            if(Mathf.Abs(N(selectedFurniture,key)-value)<.001f)return;
+            string reason;
+            if(FurniturePlacement.TryChange(plan,selectedFurniture,key,value,out reason))
+            {furnitureEditError="";RefreshViewerGeometry();}
+            else furnitureEditError=reason;
+        }
         void DrawFurnitureSelectionOutline()
         {
             if(selectedFurniture==null||worldCamera==null||addMenuOpen)return;
@@ -2017,6 +2098,7 @@ namespace BuildYourFurniture
             if(current=="viewer")
             {
                 DrawFurnitureSelectionOutline();
+                DrawFurnitureGizmo();
                 DrawCabinetVisibilityMenu();
             }
             if(current=="editor")xmlEditor.Draw();
