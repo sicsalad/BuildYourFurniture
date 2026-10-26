@@ -73,7 +73,7 @@ namespace BuildYourFurniture
                         Inside(my, N(o, "bottom") / 1000f, (N(o, "bottom") + N(o, "height")) / 1000f))) continue;
                     Vector2 p = a + along * mx - inward * thickness * .5f;
                     cube(wallId + "_segment", new Vector3(p.x, my, p.y),
-                        new Vector3(x1 - x0, y1 - y0, thickness), Color.white, angle);
+                        new Vector3(x1 - x0, y1 - y0, thickness), new Color(.94f,.93f,.89f), angle);
                 }
                 foreach (var o in cuts)
                 {
