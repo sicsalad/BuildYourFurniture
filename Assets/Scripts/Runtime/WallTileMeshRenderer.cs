@@ -107,7 +107,6 @@ namespace BuildYourFurniture
                 if (!ColorUtility.TryParseHtmlString(S(finish,"color","#FFFFFF"),out tileColor)) tileColor=Color.white;
                 var tileTexture = TextureFor(S(finish,"texture","Textures/tuzzi-tile-base64"));
                 var tileMat = Material(tileColor,tileTexture,N(finish,"smoothness",.7f));
-                RemoteSurfaceTexture.Attach(tileMat,S(finish,"textureUrl"),register);
                 var groutMat = Material(groutColor,null,0);
                 foreach (var wall in Items(root,"walls","wall"))
                 {
