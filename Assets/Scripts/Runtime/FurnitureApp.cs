@@ -237,6 +237,100 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawBedEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Franciaágyak a tervben");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            bedEditorScroll=GUILayout.BeginScrollView(bedEditorScroll);
+            if(plan!=null)
+            {
+                var beds=plan.Root.Element("doubleBeds");
+                if(beds==null){beds=new XElement("doubleBeds");plan.Root.Add(beds);}
+                if(GUILayout.Button("+ Franciaágy (140 × 200 cm)",GUILayout.Height(36)))
+                {
+                    int number=1;
+                    while(beds.Elements("bed").Any(e=>S(e,"id")=="BED"+number))number++;
+                    beds.Add(new XElement("bed",
+                        new XAttribute("id","BED"+number),
+                        new XAttribute("width","1400"),new XAttribute("length","2000"),
+                        new XAttribute("frameHeight","350"),new XAttribute("headboardHeight","950"),
+                        new XAttribute("x","500"),new XAttribute("y","500"),
+                        new XAttribute("rotation","0"),new XAttribute("finish","0"),
+                        new XAttribute("color",DoubleBedRenderer.Colors[0])));
+                    SaveBeds();RefreshViewerGeometry();
+                }
+                foreach(var bed in beds.Elements("bed").ToList())
+                {
+                    GUILayout.Label("Franciaágy "+S(bed,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(var property in new[]{"width","length","frameHeight","headboardHeight","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        string label=property=="width"?"Szélesség (mm)":
+                            property=="length"?"Hosszúság (mm)":
+                            property=="frameHeight"?"Ágykeret magasság":
+                            property=="headboardHeight"?"Fejtámla magasság":
+                            property=="rotation"?"Forgatás (°)":property=="x"?"X pozíció (mm)":"Y pozíció (mm)";
+                        GUILayout.Label(label,GUILayout.Width(155));
+                        string oldValue=S(bed,property,"0");
+                        string next=GUILayout.TextField(oldValue);
+                        float number;
+                        if(next!=oldValue&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out number))
+                        {
+                            if(property=="width")number=Mathf.Max(900,number);
+                            if(property=="length")number=Mathf.Max(1600,number);
+                            if(property=="frameHeight")number=Mathf.Clamp(number,200,650);
+                            if(property=="headboardHeight")number=Mathf.Clamp(number,500,1600);
+                            bed.SetAttributeValue(property,SofaNumber(number));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Szín (HEX)",GUILayout.Width(155));
+                    string previous=S(bed,"color",DoubleBedRenderer.Colors[0]);
+                    string entered=GUILayout.TextField(previous);
+                    Color parsed;
+                    if(entered!=previous&&ColorUtility.TryParseHtmlString(entered,out parsed))
+                    {bed.SetAttributeValue("color",entered);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Ágykeret textúrája");
+                    int selected=Mathf.Clamp(Mathf.RoundToInt(N(bed,"finish",0)),0,2);
+                    for(int i=0;i<DoubleBedRenderer.Finishes.Length;i++)
+                    {
+                        if(GUILayout.Toggle(i==selected,DoubleBedRenderer.Finishes[i],"Button")&&i!=selected)
+                        {
+                            bed.SetAttributeValue("finish",i);
+                            bed.SetAttributeValue("color",DoubleBedRenderer.Colors[i]);
+                            selected=i;changed=true;
+                        }
+                    }
+                    if(GUILayout.Button("Franciaágy törlése")){bed.Remove();changed=true;}
+                    if(changed){SaveBeds();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveBeds()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Franciaágy mentve a tervbe.";
+            }
+            catch(Exception ex){status="Franciaágy mentési hiba: "+ex.Message;}
+        }
         void DrawDeskEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
