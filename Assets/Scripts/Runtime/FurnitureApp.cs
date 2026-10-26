@@ -1255,7 +1255,7 @@ namespace BuildYourFurniture
                 Debug.LogWarning("Could not open selected plan; loading bundled apartment: "+ex.Message);
                 if(sample!=null)LoadPlan(sample.text);
             }
-            Show("main");
+            Show(UnityEngine.XR.XRSettings.isDeviceActive?"viewer":"main");
         }
         void EnsureEventSystem()
         {
