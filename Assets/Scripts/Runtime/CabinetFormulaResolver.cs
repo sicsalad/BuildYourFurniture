@@ -34,7 +34,7 @@ namespace BuildYourFurniture
             try
             {
                 float result;
-                var dimension=document.Dimensions.FirstOrDefault(d=>string.Equals(d.Id,key,StringComparison.OrdinalIgnoreCase));
+                var dimension=document.Dimensions.FirstOrDefault(d=>(string.Equals(d.Id,key,StringComparison.OrdinalIgnoreCase)||string.Equals(d.Name,key,StringComparison.OrdinalIgnoreCase)));
                 if(dimension!=null)result=dimension.EffectiveValue;
                 else
                 {
@@ -42,7 +42,7 @@ namespace BuildYourFurniture
                     if(suffix)
                     {
                         var id=key.Substring(0,key.Length-6);
-                        var dim=document.Dimensions.FirstOrDefault(d=>string.Equals(d.Id,id,StringComparison.OrdinalIgnoreCase));
+                        var dim=document.Dimensions.FirstOrDefault(d=>(string.Equals(d.Id,id,StringComparison.OrdinalIgnoreCase)||string.Equals(d.Name,id,StringComparison.OrdinalIgnoreCase)));
                         if(dim==null)throw new FormatException("Ismeretlen méret: "+key);
                         result=dim.Delta;
                     }
