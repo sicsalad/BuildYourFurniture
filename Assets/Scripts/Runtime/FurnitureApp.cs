@@ -155,7 +155,7 @@ namespace BuildYourFurniture
         bool addMenuOpen;
         bool furnitureResizeMode;
         int furnitureEditMode; // 0 Move, 1 Resize, 2 Rotate
-        readonly string[] addKinds={"Gardrób / szekrény","Íróasztal","Franciaágy","Kanapé","TV-állvány","LED TV","Térelválasztó polc","Étkezőasztal","Dohányzóasztal","Szőnyeg"};
+        readonly string[] addKinds={"Gardrób / szekrény","Íróasztal","Franciaágy","Kanapé","TV-állvány","LED TV","Térelválasztó polc","Étkezőasztal","Dohányzóasztal","Szőnyeg","Könyv","Cserepes virág","Növény"};
         void DrawCabinetVisibilityMenu()
         {
             float barHeight=Mathf.Max(48,Screen.height*.085f);
@@ -204,9 +204,9 @@ namespace BuildYourFurniture
         void AddFurnitureKind(int kind)
         {
             if(plan==null)return;
-            string[] groups={"mirroredWardrobes","standingDesks","doubleBeds","sofas","tvStands","ledTvs","dividerShelves","tables","tables","rugs"};
-            string[] tags={"wardrobe","desk","bed","sofa","stand","tv","shelf","table","table","rug"};
-            string[] prefixes={"WARD","DESK","BED","S","TV","LED","DIV","TABLE","TABLE","RUG"};
+            string[] groups={"mirroredWardrobes","standingDesks","doubleBeds","sofas","tvStands","ledTvs","dividerShelves","tables","tables","rugs","decorations","decorations","decorations"};
+            string[] tags={"wardrobe","desk","bed","sofa","stand","tv","shelf","table","table","rug","book","flower","plant"};
+            string[] prefixes={"WARD","DESK","BED","S","TV","LED","DIV","TABLE","TABLE","RUG","BOOK","FLOWER","PLANT"};
             if(kind<0||kind>=groups.Length)return;
             var group=plan.Root.Element(groups[kind]);
             if(group==null){group=new XElement(groups[kind]);plan.Root.Add(group);}
@@ -214,9 +214,9 @@ namespace BuildYourFurniture
             while(group.Elements().Any(e=>S(e,"id")==prefixes[kind]+id))id++;
             var item=new XElement(tags[kind],new XAttribute("id",prefixes[kind]+id),
                 new XAttribute("x",0),new XAttribute("y",0),new XAttribute("rotation",0));
-            int[] widths={1000,1200,1400,1400,1400,1210,1400,1200,1200,1600};
-            int[] depths={450,700,2000,850,420,80,350,800,800,2400};
-            int[] heights={1850,740,950,850,500,700,1600,750,450,12};
+            int[] widths={1000,1200,1400,1400,1400,1210,1400,1200,1200,1600,200,350,550};
+            int[] depths={450,700,2000,850,420,80,350,800,800,2400,150,350,550};
+            int[] heights={1850,740,950,850,500,700,1600,750,450,12,280,450,1000};
             item.SetAttributeValue("width",widths[kind]);
             item.SetAttributeValue(kind==2?"length":"depth",depths[kind]);
             item.SetAttributeValue(kind==9?"thickness":"height",heights[kind]);
@@ -225,6 +225,8 @@ namespace BuildYourFurniture
             if(kind==5){item.SetAttributeValue("inches",54);item.SetAttributeValue("bottomHeight",900);}
             if(kind==7||kind==8)
             {item.SetAttributeValue("kind",kind==7?"dining":"coffee");item.SetAttributeValue("shape",0);item.SetAttributeValue("style",0);}
+            if(kind>=10){item.SetAttributeValue("collision","none");item.SetAttributeValue("variant","0");item.SetAttributeValue("color",kind==10?"#964B32":kind==11?"#D9699B":"#367B40");}
+            if(kind==0){item.SetAttributeValue("finish","0");item.SetAttributeValue("doorFinish","0");item.SetAttributeValue("color",MirroredWardrobeRenderer.Colors[0]);item.SetAttributeValue("doorColor",MirroredWardrobeRenderer.Colors[0]);}
             group.Add(item);
             if(AddFurnitureToActiveRoom(item)){SaveLaminates();RefreshViewerGeometry();}
         }
@@ -1679,22 +1681,11 @@ namespace BuildYourFurniture
             if(!dragPlane.Raycast(mouseRay,out t))return;
             Vector3 hitPosition=mouseRay.GetPoint(t);
             Vector2 candidate=new Vector2(hitPosition.x,hitPosition.z)+furnitureDragOffset;
-            float oldX=N(selectedFurniture,"x"),oldY=N(selectedFurniture,"y");
-            selectedFurniture.SetAttributeValue("x",SofaNumber(Mathf.Round(candidate.x*1000/10f)*10f));
-            selectedFurniture.SetAttributeValue("y",SofaNumber(Mathf.Round(candidate.y*1000/10f)*10f));
             string reason;
-            if(FurniturePlacement.Valid(plan,selectedFurniture,out reason))
-            {
-                furnitureEditError="";
-                SaveLaminates();
-                RefreshViewerGeometry();
-            }
-            else
-            {
-                selectedFurniture.SetAttributeValue("x",SofaNumber(oldX));
-                selectedFurniture.SetAttributeValue("y",SofaNumber(oldY));
-                furnitureEditError=reason;
-            }
+            if(FurniturePlacement.TryMove(plan,selectedFurniture,
+                Mathf.Round(candidate.x*100f)*10f,Mathf.Round(candidate.y*100f)*10f,out reason))
+            {furnitureEditError="";SaveLaminates();RefreshViewerGeometry();}
+            else furnitureEditError=reason;
         }
         void DrawSelectedFurniture(float barHeight)
         {
@@ -1954,6 +1945,7 @@ namespace BuildYourFurniture
             DividerShelfRenderer.Build(renderPlan, element=>geometry.Add(element));
             TableRenderer.Build(renderPlan, element=>geometry.Add(element));
             MirroredWardrobeRenderer.Build(renderPlan, element=>geometry.Add(element));
+            DecorationRenderer.Build(renderPlan, element=>geometry.Add(element));
             PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
