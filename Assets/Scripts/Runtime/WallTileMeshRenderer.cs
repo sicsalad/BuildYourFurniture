@@ -122,6 +122,7 @@ namespace BuildYourFurniture
                     if (length < .001f) continue;
                     Vector2 along=diff/length;
                     Vector2 inward=new Vector2(-along.y,along.x);
+                    if(S(finish,"side")=="reverse")inward=-inward;
                     var cuts=openings.Where(o=>S(o,"wallId")==wallId).ToList();
                     var gv=new List<Vector3>(); var guv=new List<Vector2>(); var gi=new List<int>();
                     var tv=new List<Vector3>(); var tuv=new List<Vector2>(); var ti=new List<int>();
