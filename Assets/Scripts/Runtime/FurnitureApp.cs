@@ -32,6 +32,7 @@ namespace BuildYourFurniture
         string status = "";
         readonly XmlDesignEditor xmlEditor = new XmlDesignEditor();
         Texture2D tileTexture;
+        readonly PlanSurfaceEditor surfaceEditor=new PlanSurfaceEditor();
         bool apartmentOverview=true;
         bool roomNavigationOpen;
         XElement selectedFurniture;
@@ -167,6 +168,9 @@ namespace BuildYourFurniture
                 furnitureEditMode=(furnitureEditMode+1)%3;
                 furnitureResizeMode=furnitureEditMode==1;
             }
+            if(GUI.Button(new Rect(325,8,140,barHeight-16),
+                surfaceEditor.Visible?"Felületek bezárása":"Fal / padló / csempe"))
+            {surfaceEditor.Visible=!surfaceEditor.Visible;addMenuOpen=false;}
             if(GUI.Button(new Rect(Mathf.Max(325,Screen.width-525),8,165,barHeight-16),"Belépés szobába"))
             {roomNavigationOpen=!roomNavigationOpen;addMenuOpen=false;}
             if(GUI.Button(new Rect(Mathf.Max(500,Screen.width-350),8,165,barHeight-16),"Teljes alaprajz"))
@@ -198,7 +202,8 @@ namespace BuildYourFurniture
                     }
                 }
             }
-            if(!addMenuOpen)DrawSelectedFurniture(barHeight);
+            if(surfaceEditor.Visible)surfaceEditor.Draw(plan,()=>{SaveLaminates();RefreshViewerGeometry();});
+            else if(!addMenuOpen)DrawSelectedFurniture(barHeight);
         }
         void AddFurnitureKind(int kind)
         {
