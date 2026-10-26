@@ -1541,10 +1541,27 @@ namespace BuildYourFurniture
         void HandleFurnitureMouse()
         {
             if(worldCamera==null||plan==null)return;
+            bool pressed=false,held=false,released=false;
+            Vector3 pointer=Vector3.zero;
+#if ENABLE_INPUT_SYSTEM
+            var mouse=Mouse.current;
+            if(mouse==null)return;
+            pressed=mouse.leftButton.wasPressedThisFrame;
+            held=mouse.leftButton.isPressed;
+            released=mouse.leftButton.wasReleasedThisFrame;
+            pointer=mouse.position.ReadValue();
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            pressed=Input.GetMouseButtonDown(0);
+            held=Input.GetMouseButton(0);
+            released=Input.GetMouseButtonUp(0);
+            pointer=Input.mousePosition;
+#else
+            return;
+#endif
             // The object is picked through its rendered mesh colliders, not an invisible proxy.
-            if(Input.GetMouseButtonDown(0)&&Input.mousePosition.y<Screen.height*.90f)
+            if(pressed&&pointer.y<Screen.height*.90f)
             {
-                var ray=worldCamera.ScreenPointToRay(Input.mousePosition);
+                var ray=worldCamera.ScreenPointToRay(pointer);
                 RaycastHit[] hits=Physics.RaycastAll(ray,200f);
                 foreach(var hit in hits.OrderBy(h=>h.distance))
                 {
@@ -1579,9 +1596,9 @@ namespace BuildYourFurniture
                     break;
                 }
             }
-            if(Input.GetMouseButtonUp(0))furnitureDragging=false;
-            if(!furnitureDragging||selectedFurniture==null||!Input.GetMouseButton(0))return;
-            var mouseRay=worldCamera.ScreenPointToRay(Input.mousePosition);
+            if(released)furnitureDragging=false;
+            if(!furnitureDragging||selectedFurniture==null||!held)return;
+            var mouseRay=worldCamera.ScreenPointToRay(pointer);
             var dragPlane=new Plane(Vector3.up,new Vector3(0,N(selectedFurniture,"z")/1000f,0));
             float t;
             if(!dragPlane.Raycast(mouseRay,out t))return;
