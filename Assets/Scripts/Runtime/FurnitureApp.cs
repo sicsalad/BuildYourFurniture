@@ -36,6 +36,8 @@ namespace BuildYourFurniture
         bool sofaEditorOpen;
         bool deskEditorOpen;
         bool bedEditorOpen;
+        bool tvStandEditorOpen;
+        Vector2 tvStandEditorScroll;
         Vector2 bedEditorScroll;
         Vector2 deskEditorScroll;
         Vector2 sofaEditorScroll;
@@ -126,6 +128,8 @@ namespace BuildYourFurniture
             if(deskEditorOpen)DrawDeskEditor(barHeight);
             if(GUI.Button(new Rect(695,8,160,Mathf.Max(30,barHeight-16)),bedEditorOpen?"Franciaágy ▲":"Franciaágy +"))bedEditorOpen=!bedEditorOpen;
             if(bedEditorOpen)DrawBedEditor(barHeight);
+            if(GUI.Button(new Rect(865,8,155,Mathf.Max(30,barHeight-16)),tvStandEditorOpen?"TV-állvány ▲":"TV-állvány +"))tvStandEditorOpen=!tvStandEditorOpen;
+            if(tvStandEditorOpen)DrawTvStandEditor(barHeight);
             if(!cabinetVisibilityOpen)return;
             var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
             if(cabinets==null)return;
@@ -757,6 +761,7 @@ namespace BuildYourFurniture
             SofaRenderer.Build(renderPlan, element=>geometry.Add(element));
             StandingDeskRenderer.Build(renderPlan, element=>geometry.Add(element));
             DoubleBedRenderer.Build(renderPlan, element=>geometry.Add(element));
+            TvStandRenderer.Build(renderPlan, element=>geometry.Add(element));
             PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
