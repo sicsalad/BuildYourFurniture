@@ -196,15 +196,7 @@ namespace BuildYourFurniture
         {
             var result=source.Clone();
             result.Id=source.Id;result.Name=source.Name;result.Position=source.Position;
-            var vars=Dimensions.ToDictionary(d=>d.Id,d=>d.EffectiveValue,StringComparer.Ordinal);
-            for(int i=0;i<result.Outline.Count;i++)
-            {
-                var vertex=result.Outline[i];
-                if(!string.IsNullOrWhiteSpace(vertex.XFormula))
-                    vertex.Point.x=CabinetTypeEngine.Evaluate(vertex.XFormula,vars);
-                if(!string.IsNullOrWhiteSpace(vertex.YFormula))
-                    vertex.Point.y=CabinetTypeEngine.Evaluate(vertex.YFormula,vars);
-            }
+            CabinetFormulaResolver.Resolve(this,source,result);
             return result;
         }
         public static Vector2[] RawOutline(PanelElement p)
