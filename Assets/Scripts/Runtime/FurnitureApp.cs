@@ -261,6 +261,90 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawWardrobeEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-405),barHeight+5,395,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Tükrös tolóajtós gardróbok");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            wardrobeEditorScroll=GUILayout.BeginScrollView(wardrobeEditorScroll);
+            if(plan!=null)
+            {
+                var wardrobes=plan.Root.Element("mirroredWardrobes");
+                if(wardrobes==null){wardrobes=new XElement("mirroredWardrobes");plan.Root.Add(wardrobes);}
+                if(GUILayout.Button("+ Tükrös gardrób (100 × 185 × 45 cm)",GUILayout.Height(34)))
+                {
+                    int id=1;while(wardrobes.Elements("wardrobe").Any(e=>S(e,"id")=="WARD"+id))id++;
+                    wardrobes.Add(new XElement("wardrobe",new XAttribute("id","WARD"+id),
+                        new XAttribute("width","1000"),new XAttribute("height","1850"),
+                        new XAttribute("depth","450"),new XAttribute("x","500"),
+                        new XAttribute("y","500"),new XAttribute("rotation","0"),
+                        new XAttribute("open","0"),new XAttribute("finish","0"),
+                        new XAttribute("color",MirroredWardrobeRenderer.Colors[0])));
+                    SaveWardrobes();RefreshViewerGeometry();
+                }
+                foreach(var wardrobe in wardrobes.Elements("wardrobe").ToList())
+                {
+                    GUILayout.Label("Gardrób "+S(wardrobe,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(string key in new[]{"width","height","depth","x","y","rotation","open"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        string label=key=="width"?"Szélesség (mm)":key=="height"?"Magasság (mm)":
+                            key=="depth"?"Mélység (mm)":key=="x"?"X pozíció (mm)":
+                            key=="y"?"Y pozíció (mm)":key=="rotation"?"Forgatás (°)":"Ajtónyitás (0–1)";
+                        GUILayout.Label(label,GUILayout.Width(185));
+                        string previous=S(wardrobe,key,"0");
+                        string next=GUILayout.TextField(previous);
+                        float value;
+                        if(next!=previous&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out value))
+                        {
+                            if(key=="width")value=Mathf.Max(600,value);
+                            if(key=="height")value=Mathf.Max(1000,value);
+                            if(key=="depth")value=Mathf.Max(250,value);
+                            if(key=="open")value=Mathf.Clamp01(value);
+                            wardrobe.SetAttributeValue(key,SofaNumber(value));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Bútorlap színe (HEX)",GUILayout.Width(185));
+                    string oldColor=S(wardrobe,"color",MirroredWardrobeRenderer.Colors[0]);
+                    string newColor=GUILayout.TextField(oldColor);
+                    Color parsed;
+                    if(newColor!=oldColor&&ColorUtility.TryParseHtmlString(newColor,out parsed))
+                    {wardrobe.SetAttributeValue("color",newColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Bútorlap textúra (10)");
+                    int selected=Mathf.Clamp(Mathf.RoundToInt(N(wardrobe,"finish",0)),0,9);
+                    for(int i=0;i<MirroredWardrobeRenderer.Finishes.Length;i++)
+                        if(GUILayout.Toggle(i==selected,MirroredWardrobeRenderer.Finishes[i],"Button")&&i!=selected)
+                        {wardrobe.SetAttributeValue("finish",i);wardrobe.SetAttributeValue("color",MirroredWardrobeRenderer.Colors[i]);selected=i;changed=true;}
+                    if(GUILayout.Button("Gardrób törlése")){wardrobe.Remove();changed=true;}
+                    if(changed){SaveWardrobes();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveWardrobes()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Tükrös gardrób mentve a tervbe.";
+            }
+            catch(Exception ex){status="Gardrób mentési hiba: "+ex.Message;}
+        }
         void DrawTableEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-405),barHeight+5,395,Mathf.Max(100,Screen.height-barHeight-48));
