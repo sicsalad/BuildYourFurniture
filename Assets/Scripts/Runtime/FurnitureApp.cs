@@ -42,6 +42,10 @@ namespace BuildYourFurniture
         bool dividerEditorOpen;
         bool tableEditorOpen;
         bool wardrobeEditorOpen;
+        bool laminateEditorOpen;
+        bool deleteModelsOpen;
+        Vector2 laminateEditorScroll;
+        Vector2 deleteModelsScroll;
         Vector2 wardrobeEditorScroll;
         Vector2 tableEditorScroll;
         Vector2 dividerEditorScroll;
@@ -150,6 +154,10 @@ namespace BuildYourFurniture
             if(tableEditorOpen)DrawTableEditor(barHeight);
             if(GUI.Button(new Rect(1675,8,170,Mathf.Max(30,barHeight-16)),wardrobeEditorOpen?"Gardrób ▲":"Tükrös gardrób +"))wardrobeEditorOpen=!wardrobeEditorOpen;
             if(wardrobeEditorOpen)DrawWardrobeEditor(barHeight);
+            if(GUI.Button(new Rect(1855,8,140,Mathf.Max(30,barHeight-16)),laminateEditorOpen?"Laminált ▲":"Laminált +"))laminateEditorOpen=!laminateEditorOpen;
+            if(laminateEditorOpen)DrawLaminateEditor(barHeight);
+            if(GUI.Button(new Rect(2005,8,145,Mathf.Max(30,barHeight-16)),deleteModelsOpen?"Törlés ▲":"Modellek törlése"))deleteModelsOpen=!deleteModelsOpen;
+            if(deleteModelsOpen)DrawModelDeletion(barHeight);
             if(!cabinetVisibilityOpen)return;
             var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
             if(cabinets==null)return;
@@ -1317,10 +1325,16 @@ namespace BuildYourFurniture
                 foreach(var p in room.Elements("point")) pts.Add(new Vector2(N(p,"x")/1000f,N(p,"y")/1000f));
                 if (pts.Count < 3) continue;
                 var min=pts[0]; var max=pts[0]; foreach(var p in pts){ min=Vector2.Min(min,p);max=Vector2.Max(max,p); }
-                Cube("Floor",new Vector3((min.x+max.x)/2,-.05f,(min.y+max.y)/2),new Vector3(max.x-min.x,.1f,max.y-min.y),Color.gray);
+                Cube("Floor",new Vector3((min.x+max.x)/2,-.05f,(min.y+max.y)/2),new Vector3(max.x-min.x,.1f,max.y-min.y),new Color(.55f,.55f,.55f));
             }
             var renderPlan=VisibleCabinetPlan();
-            FloorTileRenderer.Build(renderPlan, element => geometry.Add(element));
+            var tiledPlan=new XDocument(renderPlan);
+            var floorFinishes=tiledPlan.Root.Element("floorFinishes");
+            if(floorFinishes!=null)
+                foreach(var finish in floorFinishes.Elements("finish").ToList())
+                    if(LaminateRenderer.HasFloor(renderPlan,S(finish,"roomId")))finish.Remove();
+            FloorTileRenderer.Build(tiledPlan, element => geometry.Add(element));
+            LaminateRenderer.Build(renderPlan, element=>geometry.Add(element));
             WallTileMeshRenderer.Build(renderPlan, element => geometry.Add(element));
             ApplianceTextureRenderer.Build(renderPlan, element => geometry.Add(element));
             ApplianceTextureRenderer.BuildCabinetFronts(renderPlan, element => geometry.Add(element));
