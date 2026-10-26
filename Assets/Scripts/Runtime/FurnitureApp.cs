@@ -233,6 +233,93 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawDeskEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Állítható íróasztalok");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            deskEditorScroll=GUILayout.BeginScrollView(deskEditorScroll);
+            if(plan!=null)
+            {
+                var desks=plan.Root.Element("standingDesks");
+                if(desks==null){desks=new XElement("standingDesks");plan.Root.Add(desks);}
+                if(GUILayout.Button("+ Íróasztal (120 cm, 2 monitor)",GUILayout.Height(34)))
+                {
+                    int index=1;
+                    while(desks.Elements("desk").Any(d=>S(d,"id")=="DESK"+index))index++;
+                    desks.Add(new XElement("desk",
+                        new XAttribute("id","DESK"+index),new XAttribute("width","1200"),
+                        new XAttribute("depth","700"),new XAttribute("height","740"),
+                        new XAttribute("x","500"),new XAttribute("y","500"),
+                        new XAttribute("rotation","0"),new XAttribute("finish","0"),
+                        new XAttribute("color",StandingDeskRenderer.DefaultColor(0))));
+                    SaveDesks();RefreshViewerGeometry();
+                }
+                foreach(var desk in desks.Elements("desk").ToList())
+                {
+                    GUILayout.Label("Íróasztal "+S(desk,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(var property in new[]{"width","depth","height","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label(property+" (mm, rotation °)",GUILayout.Width(155));
+                        string oldValue=S(desk,property,"0");
+                        string next=GUILayout.TextField(oldValue);
+                        float number;
+                        if(next!=oldValue&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out number))
+                        {
+                            if(property=="width")number=Mathf.Max(900f,number);
+                            if(property=="depth")number=Mathf.Max(500f,number);
+                            if(property=="height")number=Mathf.Clamp(number,620f,1250f);
+                            desk.SetAttributeValue(property,SofaNumber(number));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Szín HEX",GUILayout.Width(155));
+                    string oldColor=S(desk,"color","#BA9669");
+                    string newColor=GUILayout.TextField(oldColor);
+                    Color parsed;
+                    if(newColor!=oldColor&&ColorUtility.TryParseHtmlString(newColor,out parsed))
+                    {desk.SetAttributeValue("color",newColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Felület / textúra");
+                    int selected=Mathf.Clamp(Mathf.RoundToInt(N(desk,"finish",0)),0,StandingDeskRenderer.Finishes.Length-1);
+                    for(int i=0;i<StandingDeskRenderer.Finishes.Length;i++)
+                    {
+                        if(GUILayout.Toggle(i==selected,StandingDeskRenderer.Finishes[i],"Button")&&i!=selected)
+                        {
+                            desk.SetAttributeValue("finish",i);
+                            desk.SetAttributeValue("color",StandingDeskRenderer.DefaultColor(i));
+                            changed=true;selected=i;
+                        }
+                    }
+                    if(GUILayout.Button("Íróasztal törlése")){desk.Remove();changed=true;}
+                    if(changed){SaveDesks();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveDesks()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Íróasztal mentve a tervbe.";
+            }
+            catch(Exception ex){status="Íróasztal mentési hiba: "+ex.Message;}
+        }
         static float N(XElement e, string key, float fallback = 0) => float.TryParse((string)e.Attribute(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
         static string S(XElement e, string key, string fallback = "") => (string)e.Attribute(key) ?? fallback;
 
