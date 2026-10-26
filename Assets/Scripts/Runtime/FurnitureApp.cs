@@ -2457,7 +2457,10 @@ namespace BuildYourFurniture
                 DrawFurnitureSelectionOutline();
                 DrawFurnitureGizmo();
                 if(showSurfaceLabels)DrawSurfaceLabels();
+                bool enabledBefore=GUI.enabled;
+                if(TexturePickerPopup.IsOpen)GUI.enabled=false;
                 DrawCabinetVisibilityMenu();
+                GUI.enabled=enabledBefore;
                 TexturePickerPopup.Draw();
             }
             if(current=="editor")xmlEditor.Draw();
