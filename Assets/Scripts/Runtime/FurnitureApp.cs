@@ -34,6 +34,7 @@ namespace BuildYourFurniture
         Texture2D tileTexture;
         bool cabinetVisibilityOpen;
         bool apartmentOverview=true;
+        bool roomNavigationOpen;
         bool sofaEditorOpen;
         bool deskEditorOpen;
         bool bedEditorOpen;
@@ -159,6 +160,22 @@ namespace BuildYourFurniture
             if(laminateEditorOpen)DrawLaminateEditor(barHeight);
             if(GUI.Button(new Rect(2005,8,145,Mathf.Max(30,barHeight-16)),deleteModelsOpen?"Törlés ▲":"Modellek törlése"))deleteModelsOpen=!deleteModelsOpen;
             if(deleteModelsOpen)DrawModelDeletion(barHeight);
+            if(GUI.Button(new Rect(Mathf.Max(10,Screen.width-535),8,165,Mathf.Max(30,barHeight-16)),"Belépés szobába ▼"))roomNavigationOpen=!roomNavigationOpen;
+            if(roomNavigationOpen)
+            {
+                var rooms=plan?.Root?.Element("rooms");
+                if(rooms!=null)
+                {
+                    int index=0;
+                    foreach(var room in rooms.Elements("room"))
+                    {
+                        var selectedRoom=room;
+                        if(GUI.Button(new Rect(Mathf.Max(10,Screen.width-535),barHeight+8+index*38,165,34),S(room,"name",S(room,"id"))))
+                            EnterRoom(selectedRoom);
+                        index++;
+                    }
+                }
+            }
             if(GUI.Button(new Rect(Mathf.Max(10,Screen.width-355),8,165,Mathf.Max(30,barHeight-16)),"Teljes alaprajz"))SetApartmentOverview(true);
             if(GUI.Button(new Rect(Mathf.Max(180,Screen.width-185),8,165,Mathf.Max(30,barHeight-16)),"Konyha nézet"))SetApartmentOverview(false);
             if(!cabinetVisibilityOpen)return;
@@ -1459,7 +1476,11 @@ namespace BuildYourFurniture
             lookX = Input.GetAxisRaw("Mouse X"); lookY = Input.GetAxisRaw("Mouse Y");
             wheel = Input.mouseScrollDelta.y;
 #endif
-            if (reset) { tr.position = cameraHome; tr.rotation = cameraHomeRotation; SyncCameraAngles(); }
+            if (reset)
+            {
+                tr.position=cameraHome;tr.rotation=cameraHomeRotation;
+                SyncCameraAngles();
+            }
             if (rightDown)
             {
                 // Mouse deltas are pixels with the new Input System and axis values with legacy input.
@@ -1478,7 +1499,16 @@ namespace BuildYourFurniture
             var direction = planarRight * horizontal + planarForward * forward + Vector3.up * vertical;
             if (direction.sqrMagnitude > 1f) direction.Normalize();
             tr.position += direction * speed;
-            if (Mathf.Abs(wheel) > .001f) tr.position += tr.forward * wheel * .45f;
+            if (Mathf.Abs(wheel) > .001f)
+            {
+                if(worldCamera.orthographic)
+                {
+                    worldCamera.orthographicSize=Mathf.Clamp(worldCamera.orthographicSize*Mathf.Pow(.85f,wheel),.8f,80f);
+                    if(worldCamera.orthographicSize<2.4f)EnterRoomAt(tr.position);
+                }
+                else tr.position+=tr.forward*wheel*.45f;
+            }
+            if(worldCamera.orthographic&&tr.position.y<5f)EnterRoomAt(tr.position);
         }
         void SyncCameraAngles()
         {
@@ -1486,6 +1516,39 @@ namespace BuildYourFurniture
             var angles = worldCamera.transform.eulerAngles;
             cameraYaw = angles.y;
             cameraPitch = Mathf.DeltaAngle(0f, angles.x);
+        }
+        void EnterRoomAt(Vector3 from)
+        {
+            if(worldCamera==null)return;
+            var rooms=plan?.Root?.Element("rooms");
+            if(rooms==null)return;
+            var candidates=rooms.Elements("room").Select(room=>
+            {
+                var pts=room.Elements("point").Select(p=>new Vector2(N(p,"x")/1000f,N(p,"y")/1000f)).ToList();
+                Vector2 center=pts.Count==0?Vector2.zero:new Vector2(pts.Average(p=>p.x),pts.Average(p=>p.y));
+                return new {room,center};
+            }).ToList();
+            if(candidates.Count==0)return;
+            var nearest=candidates.OrderBy(x=>(x.center-new Vector2(from.x,from.z)).sqrMagnitude).First();
+            EnterRoom(nearest.room);
+        }
+        void EnterRoom(XElement room)
+        {
+            if(worldCamera==null||room==null)return;
+            var pts=room.Elements("point").Select(p=>new Vector2(N(p,"x")/1000f,N(p,"y")/1000f)).ToList();
+            if(pts.Count<3)return;
+            Vector2 center=new Vector2(pts.Average(p=>p.x),pts.Average(p=>p.y));
+            apartmentOverview=false;
+            worldCamera.orthographic=false;
+            worldCamera.fieldOfView=65f;
+            worldCamera.nearClipPlane=.025f;
+            worldCamera.farClipPlane=200f;
+            worldCamera.transform.position=new Vector3(center.x,1.6f,center.y);
+            worldCamera.transform.rotation=Quaternion.Euler(0,0,0);
+            cameraHome=worldCamera.transform.position;
+            cameraHomeRotation=worldCamera.transform.rotation;
+            SyncCameraAngles();
+            roomNavigationOpen=false;
         }
         void SetApartmentOverview(bool overview)
         {
@@ -1515,6 +1578,7 @@ namespace BuildYourFurniture
             float cx=(minX+maxX)*.5f,cy=(minY+maxY)*.5f;
             float spanX=maxX-minX,spanY=maxY-minY;
             camera.orthographic=true;
+            camera.nearClipPlane=.025f;
             camera.orthographicSize=Mathf.Max(spanY*.58f,spanX*.58f/Mathf.Max(.5f,camera.aspect));
             camera.transform.position=new Vector3(cx,Mathf.Max(14f,spanY*1.8f),cy);
             camera.transform.rotation=Quaternion.Euler(90,0,0);
