@@ -59,8 +59,9 @@ namespace BuildYourFurniture
             }
             material.color=Color.white;
             material.mainTexture=texture;
-            if(material.HasProperty("_Smoothness"))material.SetFloat("_Smoothness",.35f);
-            if(material.HasProperty("_Glossiness"))material.SetFloat("_Glossiness",.35f);
+            float smoothness=Mathf.Clamp01(N(e,prefix+"Smoothness",.35f));
+            if(material.HasProperty("_Smoothness"))material.SetFloat("_Smoothness",smoothness);
+            if(material.HasProperty("_Glossiness"))material.SetFloat("_Glossiness",smoothness);
             if(material.HasProperty("_Metallic"))material.SetFloat("_Metallic",0f);
             if(material.HasProperty("_BaseMap"))material.SetTexture("_BaseMap",texture);
             return material;
