@@ -12,7 +12,7 @@ namespace BuildYourFurniture
     {
         public static readonly string[] Groups={
             "sofas","standingDesks","doubleBeds","tvStands","ledTvs",
-            "rugs","dividerShelves","tables","mirroredWardrobes"
+            "rugs","dividerShelves","tables","mirroredWardrobes","decorations"
         };
         static float N(XElement e,string key,float fallback=0)
         {
@@ -83,34 +83,68 @@ namespace BuildYourFurniture
                 }
             return true;
         }
-        public static bool Valid(XDocument plan,XElement item,out string reason)
+        public static bool IsNonBlocking(XElement item)
+        {
+            if(item==null)return true;
+            if(string.Equals((string)item.Attribute("collision"),"none",StringComparison.OrdinalIgnoreCase))return true;
+            string type=item.Name.LocalName.ToLowerInvariant();
+            return type=="rug"||type=="book"||type=="plant"||type=="flower"||
+                type=="decoration"||type=="tv"||type=="tile"||type=="walltile";
+        }
+        static bool WithinRoom(XDocument plan,XElement item,out string reason)
         {
             reason="";
-            var corners=Corners(item);
             var room=RoomAt(plan,Center(item));
             if(room==null){reason="A bútor középpontja nincs szobában.";return false;}
             var polygon=room.Elements("point").Select(pt=>
                 new Vector2(N(pt,"x")/1000f,N(pt,"y")/1000f)).ToList();
-            foreach(var corner in corners)
+            if(IsNonBlocking(item))return true;
+            foreach(var corner in Corners(item))
                 if(!Contains(corner,polygon))
                 {reason="A bútor kilógna a szobából vagy falba ütközne.";return false;}
+            return true;
+        }
+        public static bool HasCollision(XDocument plan,XElement item)
+        {
+            if(IsNonBlocking(item))return false;
             float bottom=N(item,"z")/1000f,top=bottom+Height(item);
+            var corners=Corners(item);
             foreach(var other in Objects(plan))
             {
-                if(ReferenceEquals(item,other))continue;
+                if(ReferenceEquals(item,other)||IsNonBlocking(other))continue;
                 float ob=N(other,"z")/1000f,ot=ob+Height(other);
                 if(top<=ob+.001f||ot<=bottom+.001f)continue;
-                if(Overlap(corners,Corners(other)))
-                {reason="Ütközés: "+(string)other.Attribute("id");return false;}
+                if(Overlap(corners,Corners(other)))return true;
             }
-            return true;
+            return false;
+        }
+        public static bool Valid(XDocument plan,XElement item,out string reason)
+        {
+            if(!WithinRoom(plan,item,out reason))return false;
+            if(HasCollision(plan,item)){reason="A bútor egy másik elemmel ütközne.";return false;}
+            reason="";return true;
         }
         public static bool TryChange(XDocument plan,XElement item,string key,float value,out string reason)
         {
+            bool wasColliding=HasCollision(plan,item);
             string old=(string)item.Attribute(key);
             item.SetAttributeValue(key,value.ToString("0.###",CultureInfo.InvariantCulture));
-            if(Valid(plan,item,out reason))return true;
+            if(WithinRoom(plan,item,out reason)&&(!HasCollision(plan,item)||wasColliding))
+            {reason="";return true;}
+            if(string.IsNullOrEmpty(reason))reason="Új ütközés nem engedélyezett.";
             if(old==null)item.Attribute(key)?.Remove();else item.SetAttributeValue(key,old);
+            return false;
+        }
+        public static bool TryMove(XDocument plan,XElement item,float x,float y,out string reason)
+        {
+            bool wasColliding=HasCollision(plan,item);
+            string oldX=(string)item.Attribute("x"),oldY=(string)item.Attribute("y");
+            item.SetAttributeValue("x",x.ToString("0.###",CultureInfo.InvariantCulture));
+            item.SetAttributeValue("y",y.ToString("0.###",CultureInfo.InvariantCulture));
+            if(WithinRoom(plan,item,out reason)&&(!HasCollision(plan,item)||wasColliding))
+            {reason="";return true;}
+            if(string.IsNullOrEmpty(reason))reason="Új ütközés nem engedélyezett.";
+            item.SetAttributeValue("x",oldX);item.SetAttributeValue("y",oldY);
             return false;
         }
         public static bool PlaceNew(XDocument plan,XElement item,Vector2 preferred,out string reason)
