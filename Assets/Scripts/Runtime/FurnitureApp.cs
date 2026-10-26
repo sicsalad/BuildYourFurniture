@@ -1955,6 +1955,36 @@ namespace BuildYourFurniture
             else status="Export: "+path;
             Debug.Log(status);
         }
-        void OnGUI() { if(current=="viewer") DrawCabinetVisibilityMenu(); if(current=="editor") xmlEditor.Draw(); if(!string.IsNullOrEmpty(status)) GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status); }
+        void DrawFurnitureSelectionOutline()
+        {
+            if(selectedFurniture==null||worldCamera==null||addMenuOpen)return;
+            var corners=FurniturePlacement.Corners(selectedFurniture);
+            float y=N(selectedFurniture,"z")/1000f;
+            float h=FurniturePlacement.Height(selectedFurniture);
+            var points=new List<Vector3>();
+            foreach(var corner in corners)
+            {
+                points.Add(worldCamera.WorldToScreenPoint(new Vector3(corner.x,y,corner.y)));
+                points.Add(worldCamera.WorldToScreenPoint(new Vector3(corner.x,y+h,corner.y)));
+            }
+            if(points.Any(p=>p.z<=0))return;
+            float minX=points.Min(p=>p.x),maxX=points.Max(p=>p.x);
+            float minY=points.Min(p=>p.y),maxY=points.Max(p=>p.y);
+            var rect=new Rect(minX,Screen.height-maxY,maxX-minX,maxY-minY);
+            if(rect.width<2||rect.height<2)return;
+            var old=GUI.color;GUI.color=new Color(.2f,.95f,.35f,1f);
+            GUI.Box(rect,"");
+            GUI.color=old;
+        }
+        void OnGUI()
+        {
+            if(current=="viewer")
+            {
+                DrawFurnitureSelectionOutline();
+                DrawCabinetVisibilityMenu();
+            }
+            if(current=="editor")xmlEditor.Draw();
+            if(!string.IsNullOrEmpty(status))GUI.Label(new Rect(12,Screen.height-32,Screen.width-24,25),status);
+        }
     }
 }
