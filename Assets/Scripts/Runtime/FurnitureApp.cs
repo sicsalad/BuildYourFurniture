@@ -1556,10 +1556,11 @@ namespace BuildYourFurniture
             return;
 #endif
             // The object is picked through its rendered mesh colliders, not an invisible proxy.
-            if(pressed&&pointer.y<Screen.height*.90f)
+            if(pressed&&pointer.y<Screen.height*.90f&&pointer.x>330f)
             {
                 var ray=worldCamera.ScreenPointToRay(pointer);
                 RaycastHit[] hits=Physics.RaycastAll(ray,200f);
+                bool picked=false;
                 foreach(var hit in hits.OrderBy(h=>h.distance))
                 {
                     Transform node=hit.collider.transform;
@@ -1579,8 +1580,9 @@ namespace BuildYourFurniture
                     }
                     if(found==null)continue;
                     selectedFurniture=found;
+                    picked=true;
                     furnitureEditError="";
-                    furnitureDragging=true;
+                    furnitureDragging=!furnitureResizeMode;
                     var plane=new Plane(Vector3.up,new Vector3(0,N(found,"z")/1000f,0));
                     float distance;
                     if(plane.Raycast(ray,out distance))
@@ -1592,6 +1594,7 @@ namespace BuildYourFurniture
                     else furnitureDragOffset=Vector2.zero;
                     break;
                 }
+                if(!picked){selectedFurniture=null;furnitureDragging=false;}
             }
             if(released)furnitureDragging=false;
             if(!furnitureDragging||selectedFurniture==null||!held)return;
@@ -1621,24 +1624,40 @@ namespace BuildYourFurniture
         void DrawSelectedFurniture(float barHeight)
         {
             if(selectedFurniture==null)return;
-            var rect=new Rect(12,barHeight+12,300,380);
-            GUI.Box(rect,"Kijelölt bútor: "+S(selectedFurniture,"id"));
+            var rect=new Rect(12,barHeight+12,310,450);
+            GUI.Box(rect,"Kijelölt elem: "+S(selectedFurniture,"id"));
             GUILayout.BeginArea(new Rect(rect.x+10,rect.y+28,rect.width-20,rect.height-35));
-            GUILayout.Label("Egérrel húzható • 10 mm lépések");
+            GUILayout.Label("Bal egérgomb: kijelölés / húzás");
+            GUILayout.Label(furnitureResizeMode?"MÉRETEZÉS (10 mm)":"MOZGATÁS (10 mm)");
+            GUILayout.BeginHorizontal();
+            if(GUILayout.Button("←"))ChangeFurniture(furnitureResizeMode?"width":"x",N(selectedFurniture,furnitureResizeMode?"width":"x")-10);
+            if(GUILayout.Button("→"))ChangeFurniture(furnitureResizeMode?"width":"x",N(selectedFurniture,furnitureResizeMode?"width":"x")+10);
+            if(GUILayout.Button("↑"))ChangeFurniture(furnitureResizeMode?selectedFurniture.Attribute("length")!=null?"length":"depth":"y",N(selectedFurniture,furnitureResizeMode?selectedFurniture.Attribute("length")!=null?"length":"depth":"y")+10);
+            if(GUILayout.Button("↓"))ChangeFurniture(furnitureResizeMode?selectedFurniture.Attribute("length")!=null?"length":"depth":"y",N(selectedFurniture,furnitureResizeMode?selectedFurniture.Attribute("length")!=null?"length":"depth":"y")-10);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            if(GUILayout.Button("↶ Forgatás -5°"))ChangeFurniture("rotation",N(selectedFurniture,"rotation")-5);
+            if(GUILayout.Button("Forgatás +5° ↷"))ChangeFurniture("rotation",N(selectedFurniture,"rotation")+5);
+            GUILayout.EndHorizontal();
             foreach(string key in new[]{"x","y","z","rotation","width","depth","length","height"})
             {
                 if(selectedFurniture.Attribute(key)==null&&key!="z")continue;
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(key,GUILayout.Width(70));
-                float currentValue=N(selectedFurniture,key);
+                float value=N(selectedFurniture,key);
                 float step=key=="rotation"?5f:10f;
-                if(GUILayout.Button("−",GUILayout.Width(34)))ChangeFurniture(key,currentValue-step);
-                GUILayout.Label(SofaNumber(currentValue),GUILayout.Width(80));
-                if(GUILayout.Button("+",GUILayout.Width(34)))ChangeFurniture(key,currentValue+step);
+                if(GUILayout.Button("−",GUILayout.Width(32)))ChangeFurniture(key,value-step);
+                GUILayout.Label(SofaNumber(value),GUILayout.Width(78));
+                if(GUILayout.Button("+",GUILayout.Width(32)))ChangeFurniture(key,value+step);
                 GUILayout.EndHorizontal();
             }
             if(!string.IsNullOrEmpty(furnitureEditError))GUILayout.Label(furnitureEditError);
-            if(GUILayout.Button("Kijelölés megszüntetése"))selectedFurniture=null;
+            if(GUILayout.Button("Kijelölés megszüntetése")){selectedFurniture=null;furnitureDragging=false;}
+            if(GUILayout.Button("DELETE – Elem törlése"))
+            {
+                selectedFurniture.Remove();selectedFurniture=null;furnitureDragging=false;
+                SaveLaminates();RefreshViewerGeometry();
+            }
             GUILayout.EndArea();
         }
         void ChangeFurniture(string key,float value)
