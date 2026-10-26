@@ -1287,6 +1287,37 @@ namespace BuildYourFurniture
             if (action.StartsWith("scene:")) Show(action.Substring(6));
             else if (action == "upload") { status = "Válassz egy XML tervet a fájlválasztóval (Windows build)."; OpenPlanDialog(); }
             else if (action == "export") Export();
+            else if (action == "loadBundledApartment") LoadBundledApartment();
+        }
+        void LoadBundledApartment()
+        {
+            try
+            {
+                var bundled=Resources.Load<TextAsset>("Plans/sample");
+                if(bundled==null)throw new FileNotFoundException("A teljes mintaterv nem található a Resources/Plans/sample.xml fájlban.");
+                var candidate=XDocument.Parse(bundled.text);
+                int count=candidate.Root?.Element("rooms")?.Elements("room").Count()??0;
+                if(count<5)throw new InvalidDataException("A beépített mintaterv csak "+count+" helyiséget tartalmaz. Frissítsd a projektet, majd indítsd újra a programot.");
+                string path=VisibilityPath;
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                if(File.Exists(path))
+                {
+                    string backup=Path.Combine(Path.GetDirectoryName(path),
+                        "sample-backup-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".xml");
+                    File.Copy(path,backup,false);
+                }
+                // Validate before replacing the active plan or its persisted override.
+                LoadPlan(bundled.text);
+                File.WriteAllText(path,bundled.text,System.Text.Encoding.UTF8);
+                apartmentOverview=true;
+                status="Teljes lakásterv betöltve ("+count+" helyiség). A korábbi terv biztonsági másolata megmaradt.";
+                Show("main");
+            }
+            catch(Exception ex)
+            {
+                status="Lakásterv betöltési hiba: "+ex.Message;
+                Debug.LogException(ex);
+            }
         }
         public void LoadPlan(string xml)
         {
