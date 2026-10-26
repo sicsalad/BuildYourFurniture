@@ -34,6 +34,8 @@ namespace BuildYourFurniture
         Texture2D tileTexture;
         bool cabinetVisibilityOpen;
         bool sofaEditorOpen;
+        bool deskEditorOpen;
+        Vector2 deskEditorScroll;
         Vector2 sofaEditorScroll;
         string sofaError="";
         Vector2 cabinetVisibilityScroll;
@@ -118,6 +120,8 @@ namespace BuildYourFurniture
                 cabinetVisibilityOpen=!cabinetVisibilityOpen;
             if(GUI.Button(new Rect(Mathf.Min(Screen.width-220,290),8,190,Mathf.Max(30,barHeight-16)),sofaEditorOpen?"Kanapé ▲":"Kanapé hozzáadás / szerkesztés"))sofaEditorOpen=!sofaEditorOpen;
             if(sofaEditorOpen)DrawSofaEditor(barHeight);
+            if(GUI.Button(new Rect(490,8,195,Mathf.Max(30,barHeight-16)),deskEditorOpen?"Íróasztal ▲":"Íróasztal + 2 monitor"))deskEditorOpen=!deskEditorOpen;
+            if(deskEditorOpen)DrawDeskEditor(barHeight);
             if(!cabinetVisibilityOpen)return;
             var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
             if(cabinets==null)return;
@@ -566,6 +570,7 @@ namespace BuildYourFurniture
                 element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
             });
             SofaRenderer.Build(renderPlan, element=>geometry.Add(element));
+            StandingDeskRenderer.Build(renderPlan, element=>geometry.Add(element));
             PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
