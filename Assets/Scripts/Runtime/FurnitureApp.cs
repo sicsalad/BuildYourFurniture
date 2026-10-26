@@ -1216,7 +1216,22 @@ namespace BuildYourFurniture
             try
             {
                 if(selection!="bundled"&&File.Exists(selection))LoadPlan(File.ReadAllText(selection));
-                else if(sample!=null)LoadPlan(sample.text);
+                else if(sample!=null)
+                {
+                    string local=VisibilityPath;
+                    bool useSaved=false;
+                    if(File.Exists(local))
+                    {
+                        try
+                        {
+                            var saved=XDocument.Load(local);
+                            useSaved=saved.Root?.Element("cameraState")!=null
+                                &&(saved.Root.Element("rooms")?.Elements("room").Count()??0)>=5;
+                        }
+                        catch(Exception ex){Debug.LogWarning("Saved plan unreadable: "+ex.Message);}
+                    }
+                    LoadPlan(useSaved?File.ReadAllText(local):sample.text);
+                }
             }
             catch(Exception ex)
             {
