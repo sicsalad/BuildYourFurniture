@@ -38,7 +38,7 @@ namespace BuildYourFurniture
         }
         static Texture2D TextureFor(string path)
         {
-            var tex = Resources.Load<Texture2D>(path);
+            var tex = CabinetAppearanceLibrary.Load(path);
             if (tex) return tex;
             if (path == "Textures/tuzzi-tile-base64")
             {
