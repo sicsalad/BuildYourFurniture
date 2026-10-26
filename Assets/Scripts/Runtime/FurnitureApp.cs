@@ -264,21 +264,25 @@ namespace BuildYourFurniture
         void DrawWardrobeEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-405),barHeight+5,395,Mathf.Max(100,Screen.height-barHeight-48));
-            GUI.Box(rect,"Tükrös tolóajtós gardróbok");
+            GUI.Box(rect,"Tolóajtós gardróbok");
             GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
             wardrobeEditorScroll=GUILayout.BeginScrollView(wardrobeEditorScroll);
             if(plan!=null)
             {
                 var wardrobes=plan.Root.Element("mirroredWardrobes");
                 if(wardrobes==null){wardrobes=new XElement("mirroredWardrobes");plan.Root.Add(wardrobes);}
-                if(GUILayout.Button("+ Tükrös gardrób (100 × 185 × 45 cm)",GUILayout.Height(34)))
+                foreach(bool mirrorDefault in new[]{true,false})
+                if(GUILayout.Button(mirrorDefault?"+ Teljesen tükrös gardrób":"+ Nem tükrös gardrób",GUILayout.Height(34)))
                 {
                     int id=1;while(wardrobes.Elements("wardrobe").Any(e=>S(e,"id")=="WARD"+id))id++;
                     wardrobes.Add(new XElement("wardrobe",new XAttribute("id","WARD"+id),
                         new XAttribute("width","1000"),new XAttribute("height","1850"),
                         new XAttribute("depth","450"),new XAttribute("x","500"),
                         new XAttribute("y","500"),new XAttribute("rotation","0"),
-                        new XAttribute("open","0"),new XAttribute("finish","0"),
+                        new XAttribute("open","0"),new XAttribute("leftMirror",mirrorDefault?1:0),
+                        new XAttribute("rightMirror",mirrorDefault?1:0),
+                        new XAttribute("doorFinish","0"),new XAttribute("doorColor",MirroredWardrobeRenderer.Colors[0]),
+                        new XAttribute("finish","0"),
                         new XAttribute("color",MirroredWardrobeRenderer.Colors[0])));
                     SaveWardrobes();RefreshViewerGeometry();
                 }
