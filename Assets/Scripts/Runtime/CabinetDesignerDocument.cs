@@ -17,7 +17,7 @@ namespace BuildYourFurniture
         public readonly List<PaletteColor> Colors=new List<PaletteColor>();
         public readonly List<MaterialType> Materials=new List<MaterialType>();
         public readonly List<PanelElement> Elements=new List<PanelElement>();
-        public sealed class Dimension { public string Id,Name; public float Value; }
+        public sealed class Dimension { public string Id,Name; public float Value; public float InstanceValue=float.NaN; public float Delta=>EffectiveValue-Value; public float EffectiveValue=>float.IsNaN(InstanceValue)?Value:InstanceValue; }
         public sealed class PaletteColor { public string Id,Name,Hex; }
         public sealed class MaterialType { public string Id,Name,ColorId,Texture; }
         public sealed class Vertex { public string Id; public Vector2 Point; public string XFormula="",YFormula=""; }
@@ -87,7 +87,7 @@ namespace BuildYourFurniture
             var dimensions=new XElement("dimensions");
             foreach(var d in Dimensions)
                 dimensions.Add(new XElement("dimension",new XAttribute("id",d.Id),
-                    new XAttribute("name",d.Name),new XAttribute("value",F(d.Value))));
+                    new XAttribute("name",d.Name),new XAttribute("value",F(d.Value)),new XAttribute("instanceValue",F(d.EffectiveValue))));
             root.Add(dimensions);
             var colors=new XElement("colors");
             foreach(var color in Colors)
@@ -139,7 +139,7 @@ namespace BuildYourFurniture
             if(root==null||root.Name!="cabinetDesign")throw new InvalidDataException("Unknown cabinet designer XML");
             var d=new CabinetDesignerDocument{Id=S(root,"id"),Name=S(root,"name")};
             foreach(var x in root.Element("dimensions")?.Elements("dimension")??Enumerable.Empty<XElement>())
-                d.Dimensions.Add(new Dimension{Id=S(x,"id"),Name=S(x,"name"),Value=N(x,"value")});
+                d.Dimensions.Add(new Dimension{Id=S(x,"id"),Name=S(x,"name"),Value=N(x,"value"),InstanceValue=N(x,"instanceValue",N(x,"value"))});
             foreach(var x in root.Element("colors")?.Elements("color")??Enumerable.Empty<XElement>())
                 d.Colors.Add(new PaletteColor{Id=S(x,"id"),Name=S(x,"name"),Hex=S(x,"hex")});
             foreach(var x in root.Element("materials")?.Elements("material")??Enumerable.Empty<XElement>())
@@ -155,7 +155,23 @@ namespace BuildYourFurniture
                     p.Bands[S(e,"from")]=N(e,"band");
                 d.Elements.Add(p);
             }
+            d.EnsurePanelIds();
             return d;
+        }
+        public void EnsurePanelIds()
+        {
+            var used=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int counter=1;
+            foreach(var panel in Elements)
+            {
+                string id=panel.Id;
+                if(string.IsNullOrWhiteSpace(id)||id.Length==32&&Guid.TryParse(id,out _ )||used.Contains(id))
+                {
+                    do{id="BL"+counter++;}while(used.Contains(id));
+                    panel.Id=id;
+                }
+                used.Add(panel.Id);
+            }
         }
         public static string Folder=>Path.Combine(Application.persistentDataPath,"XML","CabinetDesigns");
         public string FilePath=>Path.Combine(Folder,Id+".xml");
@@ -163,6 +179,7 @@ namespace BuildYourFurniture
         {
             Directory.CreateDirectory(Folder);
             if(string.IsNullOrEmpty(Id)||Id.IndexOfAny(Path.GetInvalidFileNameChars())>=0)throw new InvalidDataException("Invalid cabinet ID");
+            EnsurePanelIds();
             ToXml().Save(FilePath);
 
         }
@@ -179,7 +196,7 @@ namespace BuildYourFurniture
         {
             var result=source.Clone();
             result.Id=source.Id;result.Name=source.Name;result.Position=source.Position;
-            var vars=Dimensions.ToDictionary(d=>d.Id,d=>d.Value,StringComparer.Ordinal);
+            var vars=Dimensions.ToDictionary(d=>d.Id,d=>d.EffectiveValue,StringComparer.Ordinal);
             for(int i=0;i<result.Outline.Count;i++)
             {
                 var vertex=result.Outline[i];
