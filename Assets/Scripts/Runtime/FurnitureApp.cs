@@ -1741,14 +1741,76 @@ namespace BuildYourFurniture
                     selectedFurniture.SetAttributeValue("color",MirroredWardrobeRenderer.Colors[nextFinish]);
                     SaveLaminates();RefreshViewerGeometry();
                 }
-                GUILayout.Label("Ajtó felülete");
-                int door=Mathf.Clamp((int)N(selectedFurniture,"doorFinish",0),0,finishes.Length-1);
-                int nextDoor=GUILayout.SelectionGrid(door,finishes,2);
-                if(nextDoor!=door)
+                GUILayout.Label("Ajtók külön-külön",GUI.skin.box);
+                GUILayout.BeginHorizontal();
+                if(GUILayout.Button("Mindkettő: tükör"))
                 {
-                    selectedFurniture.SetAttributeValue("doorFinish",nextDoor);
-                    selectedFurniture.SetAttributeValue("doorColor",MirroredWardrobeRenderer.Colors[nextDoor]);
+                    selectedFurniture.SetAttributeValue("leftMirror",1);
+                    selectedFurniture.SetAttributeValue("rightMirror",1);
                     SaveLaminates();RefreshViewerGeometry();
+                }
+                if(GUILayout.Button("Mindkettő: bútorlap"))
+                {
+                    selectedFurniture.SetAttributeValue("leftMirror",0);
+                    selectedFurniture.SetAttributeValue("rightMirror",0);
+                    SaveLaminates();RefreshViewerGeometry();
+                }
+                GUILayout.EndHorizontal();
+                for(int side=0;side<2;side++)
+                {
+                    string prefix=side==0?"leftDoor":"rightDoor";
+                    string mirrorKey=side==0?"leftMirror":"rightMirror";
+                    GUILayout.Label(side==0?"BAL AJTÓ":"JOBB AJTÓ",GUI.skin.box);
+                    int currentMirror=N(selectedFurniture,mirrorKey,1)>.5f?0:1;
+                    int nextMirror=GUILayout.SelectionGrid(currentMirror,new[]{"Tükör","Bútorlap"},2);
+                    if(nextMirror!=currentMirror)
+                    {
+                        selectedFurniture.SetAttributeValue(mirrorKey,nextMirror==0?1:0);
+                        SaveLaminates();RefreshViewerGeometry();
+                    }
+                    if(nextMirror==0)continue;
+                    int doorFinish=Mathf.Clamp((int)N(selectedFurniture,prefix+"Finish",
+                        N(selectedFurniture,"doorFinish",0)),0,MirroredWardrobeRenderer.Finishes.Length-1);
+                    GUILayout.Label("Ajtó felület / anyag");
+                    int nextFinish=GUILayout.SelectionGrid(doorFinish,MirroredWardrobeRenderer.Finishes,2);
+                    if(nextFinish!=doorFinish)
+                    {
+                        selectedFurniture.SetAttributeValue(prefix+"Finish",nextFinish);
+                        selectedFurniture.SetAttributeValue(prefix+"Color",MirroredWardrobeRenderer.Colors[nextFinish]);
+                        SaveLaminates();RefreshViewerGeometry();
+                    }
+                    GUILayout.Label("Textúra mód");
+                    bool tile=S(selectedFurniture,prefix+"TextureMode",
+                        S(selectedFurniture,"doorTextureMode","tile"))!="stretch";
+                    int nextMode=GUILayout.SelectionGrid(tile?0:1,new[]{"Mozaik / ismétlés","Nyújtás / stretch"},2);
+                    if(nextMode!=(tile?0:1))
+                    {
+                        selectedFurniture.SetAttributeValue(prefix+"TextureMode",nextMode==0?"tile":"stretch");
+                        SaveLaminates();RefreshViewerGeometry();
+                    }
+                    if(nextMode==0)
+                    {
+                        GUILayout.Label("Mintaméret (mm)");
+                        GUILayout.BeginHorizontal();
+                        float size=N(selectedFurniture,prefix+"TileMm",400);
+                        if(GUILayout.Button("−",GUILayout.Width(35)))ChangeDoorProperty(prefix+"TileMm",Mathf.Max(25,size-50));
+                        GUILayout.Label(SofaNumber(size),GUILayout.Width(80));
+                        if(GUILayout.Button("+",GUILayout.Width(35)))ChangeDoorProperty(prefix+"TileMm",size+50);
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.Label("Textúra forgatás");
+                    bool rotated=N(selectedFurniture,prefix+"TextureRotation")>=45;
+                    int rotation=GUILayout.SelectionGrid(rotated?1:0,new[]{"0°","90°"},2);
+                    if(rotation!=(rotated?1:0))ChangeDoorProperty(prefix+"TextureRotation",rotation*90);
+                    GUILayout.Label("Ajtó textúra (Resources/Textures)");
+                    string key=prefix+"Texture";
+                    string previous=S(selectedFurniture,key);
+                    string entered=GUILayout.TextField(previous);
+                    if(previous!=entered)
+                    {
+                        selectedFurniture.SetAttributeValue(key,entered);
+                        SaveLaminates();RefreshViewerGeometry();
+                    }
                 }
             }
             else if(selectedFurniture.Name.LocalName=="plant")
@@ -1787,6 +1849,12 @@ namespace BuildYourFurniture
             }
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+        void ChangeDoorProperty(string key,float value)
+        {
+            if(selectedFurniture==null)return;
+            selectedFurniture.SetAttributeValue(key,SofaNumber(value));
+            SaveLaminates();RefreshViewerGeometry();
         }
         Vector2 furnitureInspectorScroll;
         void DuplicateSelectedFurniture()
