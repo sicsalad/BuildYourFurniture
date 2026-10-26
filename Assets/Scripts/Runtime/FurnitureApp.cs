@@ -33,6 +33,9 @@ namespace BuildYourFurniture
         readonly XmlDesignEditor xmlEditor = new XmlDesignEditor();
         Texture2D tileTexture;
         bool cabinetVisibilityOpen;
+        bool sofaEditorOpen;
+        Vector2 sofaEditorScroll;
+        string sofaError="";
         Vector2 cabinetVisibilityScroll;
         readonly Dictionary<string,bool> cabinetVisibility=new Dictionary<string,bool>();
         string VisibilityPath=>Path.Combine(Application.persistentDataPath,"XML","Plans","sample.xml");
@@ -113,6 +116,8 @@ namespace BuildYourFurniture
             if(GUI.Button(new Rect(14,8,buttonWidth,Mathf.Max(30,barHeight-16)),
                 cabinetVisibilityOpen?"Szekrények ▲":"Szekrények ▼"))
                 cabinetVisibilityOpen=!cabinetVisibilityOpen;
+            if(GUI.Button(new Rect(Mathf.Min(Screen.width-220,290),8,190,Mathf.Max(30,barHeight-16)),sofaEditorOpen?"Kanapé ▲":"Kanapé hozzáadás / szerkesztés"))sofaEditorOpen=!sofaEditorOpen;
+            if(sofaEditorOpen)DrawSofaEditor(barHeight);
             if(!cabinetVisibilityOpen)return;
             var cabinets=plan?.Root?.Element("cabinetry")?.Elements("cabinet").ToList();
             if(cabinets==null)return;
@@ -135,6 +140,92 @@ namespace BuildYourFurniture
                     RefreshViewerGeometry();
                 }
             }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+        void SaveSofas()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Kanapé mentve a tervbe.";
+            }
+            catch(Exception ex){sofaError=ex.Message;}
+        }
+        static string SofaNumber(float value)=>value.ToString("0.###",CultureInfo.InvariantCulture);
+        void DrawSofaEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-385),barHeight+5,375,Mathf.Max(100,Screen.height-barHeight-48));
+            GUI.Box(rect,"Kanapék a tervben");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            sofaEditorScroll=GUILayout.BeginScrollView(sofaEditorScroll);
+            if(plan!=null)
+            {
+                var sofas=plan.Root.Element("sofas");
+                if(sofas==null){sofas=new XElement("sofas");plan.Root.Add(sofas);}
+                if(GUILayout.Button("+ Kanapé hozzáadása (140 cm)",GUILayout.Height(34)))
+                {
+                    int index=1;
+                    while(sofas.Elements("sofa").Any(e=>S(e,"id")=="S"+index))index++;
+                    sofas.Add(new XElement("sofa",
+                        new XAttribute("id","S"+index),new XAttribute("width","1400"),
+                        new XAttribute("depth","850"),new XAttribute("height","850"),
+                        new XAttribute("x","500"),new XAttribute("y","500"),
+                        new XAttribute("rotation","0"),new XAttribute("color","#777C83"),
+                        new XAttribute("fabric","0")));
+                    SaveSofas();RefreshViewerGeometry();
+                }
+                foreach(var sofa in sofas.Elements("sofa").ToList())
+                {
+                    GUILayout.Label("Kanapé "+S(sofa,"id"),GUI.skin.box);
+                    bool changed=false;
+                    foreach(var dimension in new[]{"width","depth","height","x","y","rotation"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label(dimension+" (mm)",GUILayout.Width(115));
+                        string previous=S(sofa,dimension,"0");
+                        string next=GUILayout.TextField(previous);
+                        float parsed;
+                        if(next!=previous&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out parsed))
+                        {
+                            if(dimension=="width")parsed=Mathf.Max(600,parsed);
+                            if(dimension=="depth")parsed=Mathf.Max(500,parsed);
+                            if(dimension=="height")parsed=Mathf.Max(550,parsed);
+                            sofa.SetAttributeValue(dimension,SofaNumber(parsed));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Szín HEX",GUILayout.Width(115));
+                    string oldColor=S(sofa,"color","#777C83");
+                    string newColor=GUILayout.TextField(oldColor);
+                    Color parsedColor;
+                    if(newColor!=oldColor&&ColorUtility.TryParseHtmlString(newColor,out parsedColor))
+                    {sofa.SetAttributeValue("color",newColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Kárpit textúrája");
+                    int selected=Mathf.Clamp((int)N(sofa,"fabric",0),0,SofaRenderer.Fabrics.Length-1);
+                    for(int i=0;i<SofaRenderer.Fabrics.Length;i++)
+                    {
+                        if(GUILayout.Toggle(i==selected,SofaRenderer.Fabrics[i],"Button")&&i!=selected)
+                        {sofa.SetAttributeValue("fabric",i);selected=i;changed=true;}
+                    }
+                    if(GUILayout.Button("Kanapé törlése"))
+                    {sofa.Remove();changed=true;}
+                    if(changed){SaveSofas();RefreshViewerGeometry();}
+                }
+            }
+            if(!string.IsNullOrEmpty(sofaError))GUILayout.Label(sofaError);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
@@ -474,6 +565,7 @@ namespace BuildYourFurniture
                 var element = Cube(name, position, size, color);
                 element.transform.rotation = Quaternion.Euler(0f, rotation, 0f);
             });
+            SofaRenderer.Build(renderPlan, element=>geometry.Add(element));
             PlanGeometryRenderer.Build(renderPlan, (name, position, size, color, rotation) =>
             {
                 var element = Cube(name, position, size, color);
