@@ -2140,6 +2140,7 @@ namespace BuildYourFurniture
                         if(renderer is LineRenderer)continue;
                         // Keep live mirror materials and metal fittings intact.
                         if(renderer.gameObject.name.IndexOf("mirror",StringComparison.OrdinalIgnoreCase)>=0||
+                           renderer.gameObject.name.IndexOf("door finish",StringComparison.OrdinalIgnoreCase)>=0||
                            renderer.gameObject.name.IndexOf("metal",StringComparison.OrdinalIgnoreCase)>=0||
                            renderer.gameObject.name.IndexOf("rail",StringComparison.OrdinalIgnoreCase)>=0)continue;
                         var mat=renderer.material;
