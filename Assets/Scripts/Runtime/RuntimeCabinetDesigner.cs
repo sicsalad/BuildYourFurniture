@@ -442,7 +442,19 @@ namespace BuildYourFurniture
             string input;
             if(!fields.TryGetValue(key,out input))
                 input=value.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+            GUI.SetNextControlName(key);
             string nextText=GUILayout.TextField(input);
+            bool enter=ev.type==EventType.KeyDown&&(ev.keyCode==KeyCode.Return||ev.keyCode==KeyCode.KeypadEnter)&&GUI.GetNameOfFocusedControl()==key;
+            if(enter)
+            {
+                try
+                {
+                    float evaluated=CabinetFormulaResolver.Evaluate(document,nextText);
+                    nextText=evaluated.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture);
+                    GUI.FocusControl("");ev.Use();
+                }
+                catch(Exception ex){error="Érték: "+ex.Message;}
+            }
             fields[key]=nextText;
             GUILayout.EndHorizontal();
             float parsed;
@@ -575,13 +587,14 @@ namespace BuildYourFurniture
             {
                 var panel=CabinetDesignerDocument.PanelElement.Rectangle();
                 panel.Name="Bútorlap "+(document.Elements.Count+1);
-                document.Elements.Add(panel);selected=document.Elements.Count-1;fields.Clear();dirty=true;Rebuild();
+                document.Elements.Add(panel);document.EnsurePanelIds();openPanels.Add(panel.Id);selected=document.Elements.Count-1;fields.Clear();dirty=true;Rebuild();
             }
             if(GUILayout.Button("+ Bútorlap L alak"))
             {
                 var panel=CabinetDesignerDocument.PanelElement.LShape();
                 panel.Name="L alakú bútorlap "+(document.Elements.Count+1);
                 document.Elements.Add(panel);
+                document.EnsurePanelIds();openPanels.Add(panel.Id);
                 selected=document.Elements.Count-1;
                 fields.Clear();
                 dirty=true;
@@ -589,7 +602,7 @@ namespace BuildYourFurniture
             }
             if(GUILayout.Button("Elem duplikálása")&&selected>=0&&selected<document.Elements.Count)
             {
-                document.Elements.Add(document.Elements[selected].Clone());selected=document.Elements.Count-1;fields.Clear();dirty=true;Rebuild();
+                document.Elements.Add(document.Elements[selected].Clone());document.EnsurePanelIds();openPanels.Add(document.Elements.Last().Id);selected=document.Elements.Count-1;fields.Clear();dirty=true;Rebuild();
             }
             GUILayout.EndHorizontal();
             }
