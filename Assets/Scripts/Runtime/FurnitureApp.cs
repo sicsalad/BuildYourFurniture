@@ -1481,7 +1481,7 @@ namespace BuildYourFurniture
             worldCamera=go.GetComponent<Camera>(); worldCamera.depth=0;
             go.transform.position=new Vector3(1.33f,2.8f,-4.5f);
             go.transform.LookAt(new Vector3(1.33f,1.1f,1.1f));
-            if(apartmentOverview)ApplyApartmentOverview(worldCamera);
+            if(apartmentOverview&&plan?.Root?.Element("rooms")?.Elements("room").Skip(1).Any()==true)ApplyApartmentOverview(worldCamera);
             else ApplyViewerStart(go.transform);
             cameraHome = go.transform.position;
             cameraHomeRotation = go.transform.rotation;
