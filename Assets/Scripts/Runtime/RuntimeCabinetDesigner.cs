@@ -451,6 +451,45 @@ namespace BuildYourFurniture
             {dirty=true;return parsed;}
             return value;
         }
+        float FormulaField(CabinetDesignerDocument.PanelElement panel,CabinetDesignerDocument.Vertex vertex,bool x)
+        {
+            string key=panel.Id+"."+vertex.Id+(x?"X":"Y");
+            string fieldKey="expr"+key;
+            float current=x?vertex.Point.x:vertex.Point.y;
+            string formula=x?vertex.XFormula:vertex.YFormula;
+            string display=string.IsNullOrWhiteSpace(formula)?
+                current.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture):formula;
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(vertex.Id+(x?" X":" Y"),GUILayout.Width(100));
+            string input;
+            if(!fields.TryGetValue(fieldKey,out input))input=display;
+            GUI.SetNextControlName(fieldKey);
+            string next=GUILayout.TextField(input);
+            fields[fieldKey]=next;
+            bool enter=Event.current.type==EventType.KeyDown &&
+                (Event.current.keyCode==KeyCode.Return||Event.current.keyCode==KeyCode.KeypadEnter) &&
+                GUI.GetNameOfFocusedControl()==fieldKey;
+            bool apply=GUILayout.Button("✓",GUILayout.Width(28));
+            if(apply||enter)
+            {
+                try
+                {
+                    if(string.IsNullOrWhiteSpace(next))throw new FormatException("Üres képlet");
+                    float result=CabinetFormulaResolver.Evaluate(document,next);
+                    float literalValue;
+                    bool literal=float.TryParse(next,System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,out literalValue);
+                    if(x){vertex.Point.x=result;vertex.XFormula=literal?"":next;}
+                    else {vertex.Point.y=result;vertex.YFormula=literal?"":next;}
+                    fields[fieldKey]=literal?result.ToString("0.###",System.Globalization.CultureInfo.InvariantCulture):next;
+                    dirty=true;Rebuild();
+                    if(enter){GUI.FocusControl("");Event.current.Use();}
+                }
+                catch(Exception ex){error="Képlet ("+key+"): "+ex.Message;}
+            }
+            GUILayout.EndHorizontal();
+            return x?vertex.Point.x:vertex.Point.y;
+        }
         void DrawInspector()
         {
             if(GUILayout.Button((cabinetExpanded?"▼ ":"▶ ")+"Szekrény"))cabinetExpanded=!cabinetExpanded;
