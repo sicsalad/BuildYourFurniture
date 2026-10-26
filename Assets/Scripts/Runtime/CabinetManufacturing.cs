@@ -111,13 +111,12 @@ namespace BuildYourFurniture
                             float[] bc={N(b,"x"),N(b,"y"),N(b,"z")};
                             float[] ad={N(a,"width"),N(a,"height"),N(a,"depth")};
                             float[] bd={N(b,"width"),N(b,"height"),N(b,"depth")};
-                            int touching=0;bool separated=false,penetrating=true;
+                            int touching=0;bool separated=false;
                             for(int axis=0;axis<3;axis++)
                             {
                                 float overlap=(ad[axis]+bd[axis])/2-Math.Abs(ac[axis]-bc[axis]);
                                 if(overlap<-.05f)separated=true;
                                 if(Math.Abs(overlap)<=.05f)touching++;
-                                if(overlap<=.05f)penetrating=false;
                             }
                             if(separated||touching==0)
                                 errors.Add(id+": joint "+joint[0]+"/"+joint[1]+
