@@ -1158,6 +1158,13 @@ namespace BuildYourFurniture
         static float N(XElement e, string key, float fallback = 0) => float.TryParse((string)e.Attribute(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
         static string S(XElement e, string key, string fallback = "") => (string)e.Attribute(key) ?? fallback;
 
+        readonly List<string> selectablePlanPaths=new List<string>();
+        string PlanSelectionPath=>Path.Combine(Application.persistentDataPath,"XML","Plans","selected-plan.txt");
+        void RememberPlanSelection(string value)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(PlanSelectionPath));
+            File.WriteAllText(PlanSelectionPath,value);
+        }
         void Start()
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -1168,9 +1175,17 @@ namespace BuildYourFurniture
             go.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             go.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
             var sample = Resources.Load<TextAsset>("Plans/sample");
-            var editedSample = Path.Combine(Application.persistentDataPath,"XML","Plans","sample.xml");
-            if(File.Exists(editedSample)) LoadPlan(File.ReadAllText(editedSample));
-            else if (sample != null) LoadPlan(sample.text);
+            string selection=File.Exists(PlanSelectionPath)?File.ReadAllText(PlanSelectionPath).Trim():"bundled";
+            try
+            {
+                if(selection!="bundled"&&File.Exists(selection))LoadPlan(File.ReadAllText(selection));
+                else if(sample!=null)LoadPlan(sample.text);
+            }
+            catch(Exception ex)
+            {
+                Debug.LogWarning("Could not open selected plan; loading bundled apartment: "+ex.Message);
+                if(sample!=null)LoadPlan(sample.text);
+            }
             Show("main");
         }
         void EnsureEventSystem()
@@ -1245,6 +1260,7 @@ namespace BuildYourFurniture
             var asset = Resources.Load<TextAsset>("UI/"+screen);
             if (!asset) { Debug.LogError("Missing UI xml: "+screen); return; }
             var root = XDocument.Parse(asset.text).Root;
+            if(screen=="planPicker")PopulatePlanPicker(root);
             var bg = UIObject("Background",canvas.transform);
             var rect = bg.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
@@ -1288,6 +1304,60 @@ namespace BuildYourFurniture
             else if (action == "upload") { status = "Válassz egy XML tervet a fájlválasztóval (Windows build)."; OpenPlanDialog(); }
             else if (action == "export") Export();
             else if (action == "loadBundledApartment") LoadBundledApartment();
+            else if (action == "choosePlan") Show("planPicker");
+            else if (action.StartsWith("choosePlanIndex:"))
+            {
+                int index;
+                if(int.TryParse(action.Substring("choosePlanIndex:".Length),out index)
+                    &&index>=0&&index<selectablePlanPaths.Count)
+                    SelectSavedPlan(selectablePlanPaths[index]);
+            }
+        }
+        void PopulatePlanPicker(XElement root)
+        {
+            selectablePlanPaths.Clear();
+            var folder=Path.GetDirectoryName(VisibilityPath);
+            selectablePlanPaths.Add("bundled");
+            if(Directory.Exists(folder))
+                selectablePlanPaths.AddRange(Directory.GetFiles(folder,"*.xml")
+                    .OrderBy(x=>Path.GetFileName(x),StringComparer.OrdinalIgnoreCase));
+            root.Add(new XElement("label",new XAttribute("text","Válassz egy tervet"),
+                new XAttribute("x",0),new XAttribute("y",.35),new XAttribute("width",.8),
+                new XAttribute("height",.09),new XAttribute("size",30)));
+            int count=Mathf.Min(selectablePlanPaths.Count,9);
+            for(int i=0;i<count;i++)
+            {
+                string path=selectablePlanPaths[i];
+                string title=path=="bundled"?"Teljes lakás (5 helyiség) – alapértelmezett":Path.GetFileNameWithoutExtension(path);
+                root.Add(new XElement("button",new XAttribute("text",title),
+                    new XAttribute("action","choosePlanIndex:"+i),
+                    new XAttribute("x",0),new XAttribute("y",.21-i*.09),
+                    new XAttribute("width",.72),new XAttribute("height",.075)));
+            }
+            root.Add(new XElement("button",new XAttribute("text","Másik XML megnyitása..."),
+                new XAttribute("action","upload"),new XAttribute("x",-.19),
+                new XAttribute("y",-.72),new XAttribute("width",.35),new XAttribute("height",.09)));
+            root.Add(new XElement("button",new XAttribute("text","Vissza"),
+                new XAttribute("action","scene:main"),new XAttribute("x",.22),
+                new XAttribute("y",-.72),new XAttribute("width",.23),new XAttribute("height",.09)));
+        }
+        void SelectSavedPlan(string path)
+        {
+            try
+            {
+                if(path=="bundled")
+                {
+                    var sample=Resources.Load<TextAsset>("Plans/sample");
+                    if(sample==null)throw new FileNotFoundException("A teljes lakásterv hiányzik.");
+                    LoadPlan(sample.text);
+                }
+                else LoadPlan(File.ReadAllText(path));
+                RememberPlanSelection(path);
+                apartmentOverview=true;
+                status="Terv kiválasztva: "+(path=="bundled"?"Teljes lakás":Path.GetFileName(path));
+                Show("main");
+            }
+            catch(Exception ex){status="Terv betöltési hiba: "+ex.Message;Debug.LogException(ex);}
         }
         void LoadBundledApartment()
         {
@@ -1309,6 +1379,7 @@ namespace BuildYourFurniture
                 // Validate before replacing the active plan or its persisted override.
                 LoadPlan(bundled.text);
                 File.WriteAllText(path,bundled.text,System.Text.Encoding.UTF8);
+                RememberPlanSelection("bundled");
                 apartmentOverview=true;
                 status="Teljes lakásterv betöltve ("+count+" helyiség). A korábbi terv biztonsági másolata megmaradt.";
                 Show("main");
@@ -1350,7 +1421,7 @@ namespace BuildYourFurniture
 #endif
         }
         volatile string pendingPath, pendingError;
-        void TryImport(string path) { try { LoadPlan(File.ReadAllText(path)); status="Terv betöltve."; } catch(Exception ex) { status=ex.Message; Debug.LogException(ex); } }
+        void TryImport(string path) { try { LoadPlan(File.ReadAllText(path)); RememberPlanSelection(path); Show("main"); status="Terv betöltve."; } catch(Exception ex) { status=ex.Message; Debug.LogException(ex); } }
         void Update()
         {
             if (pendingPath != null) { var p=pendingPath; pendingPath=null; TryImport(p); }
