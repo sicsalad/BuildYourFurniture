@@ -269,6 +269,157 @@ namespace BuildYourFurniture
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+        void DrawLaminateEditor(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-425),barHeight+5,415,Mathf.Max(110,Screen.height-barHeight-48));
+            GUI.Box(rect,"Laminált parketta / falburkolat");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            laminateEditorScroll=GUILayout.BeginScrollView(laminateEditorScroll);
+            if(plan?.Root!=null)
+            {
+                var group=plan.Root.Element("laminates");
+                if(group==null){group=new XElement("laminates");plan.Root.Add(group);}
+                foreach(string target in new[]{"floor","wall"})
+                    if(GUILayout.Button(target=="floor"?"+ Laminált padló":"+ Laminált falburkolat"))
+                    {
+                        int number=1;
+                        while(group.Elements("laminate").Any(e=>S(e,"id")=="LAM"+number))number++;
+                        var room=plan.Root.Element("rooms")?.Elements("room").FirstOrDefault();
+                        group.Add(new XElement("laminate",new XAttribute("id","LAM"+number),
+                            new XAttribute("target",target),new XAttribute("roomId",room==null?"":S(room,"id")),
+                            new XAttribute("wallId","all"),new XAttribute("boardLength","1200"),
+                            new XAttribute("boardWidth","190"),new XAttribute("thickness","8"),
+                            new XAttribute("layout","offset"),new XAttribute("grout","1"),
+                            new XAttribute("groutColor","#777777"),new XAttribute("finish","0"),
+                            new XAttribute("color",LaminateRenderer.Colors[0]),
+                            new XAttribute("fromHeight","0"),new XAttribute("toHeight","3000")));
+                        SaveLaminates();RefreshViewerGeometry();
+                    }
+                foreach(var item in group.Elements("laminate").ToList())
+                {
+                    bool changed=false;
+                    bool wall=S(item,"target")=="wall";
+                    GUILayout.Label(S(item,"id")+" – "+(wall?"Fal":"Padló"),GUI.skin.box);
+                    GUILayout.Label("Kiosztás");
+                    string layout=S(item,"layout","offset");
+                    foreach(string option in new[]{"grid","offset"})
+                        if(GUILayout.Toggle(layout==option,option=="grid"?"Hálós":"Eltolt (50%)","Button")&&layout!=option)
+                        {item.SetAttributeValue("layout",option);layout=option;changed=true;}
+                    foreach(string key in wall?
+                        new[]{"boardLength","boardWidth","thickness","grout","fromHeight","toHeight"}:
+                        new[]{"boardLength","boardWidth","thickness","grout"})
+                    {
+                        GUILayout.BeginHorizontal();
+                        string label=key=="boardLength"?"Elem hossza (mm)":
+                            key=="boardWidth"?"Elem szélessége (mm)":key=="thickness"?"Vastagság (mm)":
+                            key=="grout"?"Fuga (mm)":key=="fromHeight"?"Kezdőmagasság (mm)":"Végmagasság (mm)";
+                        GUILayout.Label(label,GUILayout.Width(200));
+                        string old=S(item,key,"0");
+                        string next=GUILayout.TextField(old);
+                        float number;
+                        if(next!=old&&float.TryParse(next,NumberStyles.Float,CultureInfo.InvariantCulture,out number))
+                        {
+                            if(key=="boardLength")number=Mathf.Max(100,number);
+                            if(key=="boardWidth")number=Mathf.Max(40,number);
+                            if(key=="thickness")number=Mathf.Clamp(number,2,25);
+                            if(key=="grout")number=Mathf.Clamp(number,0,20);
+                            item.SetAttributeValue(key,SofaNumber(number));changed=true;
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    if(wall)
+                    {
+                        GUILayout.Label("Fal kiválasztása");
+                        string wallId=S(item,"wallId","all");
+                        var ids=new List<string>{"all"};
+                        var walls=plan.Root.Element("walls");
+                        if(walls!=null)ids.AddRange(walls.Elements("wall").Select(w=>S(w,"id")));
+                        foreach(string id in ids)
+                            if(GUILayout.Toggle(wallId==id,id=="all"?"Összes fal":id,"Button")&&wallId!=id)
+                            {item.SetAttributeValue("wallId",id);wallId=id;changed=true;}
+                    }
+                    else
+                    {
+                        GUILayout.Label("Szoba padlója");
+                        var rooms=plan.Root.Element("rooms");
+                        if(rooms!=null)foreach(var room in rooms.Elements("room"))
+                        {
+                            string id=S(room,"id");
+                            if(GUILayout.Toggle(S(item,"roomId")==id,id+" "+S(room,"name"),"Button")&&S(item,"roomId")!=id)
+                            {item.SetAttributeValue("roomId",id);changed=true;}
+                        }
+                    }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Fuga színe HEX",GUILayout.Width(200));
+                    string oldGrout=S(item,"groutColor","#777777");
+                    string newGrout=GUILayout.TextField(oldGrout);
+                    Color parsed;
+                    if(newGrout!=oldGrout&&ColorUtility.TryParseHtmlString(newGrout,out parsed))
+                    {item.SetAttributeValue("groutColor",newGrout);changed=true;}
+                    GUILayout.EndHorizontal();
+                    GUILayout.Label("Laminált textúrák");
+                    int finish=Mathf.Clamp(Mathf.RoundToInt(N(item,"finish",0)),0,LaminateRenderer.Finishes.Length-1);
+                    for(int i=0;i<LaminateRenderer.Finishes.Length;i++)
+                        if(GUILayout.Toggle(finish==i,LaminateRenderer.Finishes[i],"Button")&&finish!=i)
+                        {item.SetAttributeValue("finish",i);item.SetAttributeValue("color",LaminateRenderer.Colors[i]);finish=i;changed=true;}
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Burkolat színe HEX",GUILayout.Width(200));
+                    string oldColor=S(item,"color",LaminateRenderer.Colors[finish]);
+                    string newColor=GUILayout.TextField(oldColor);
+                    if(newColor!=oldColor&&ColorUtility.TryParseHtmlString(newColor,out parsed))
+                    {item.SetAttributeValue("color",newColor);changed=true;}
+                    GUILayout.EndHorizontal();
+                    if(GUILayout.Button("Burkolat törlése")){item.Remove();changed=true;}
+                    if(changed){SaveLaminates();RefreshViewerGeometry();}
+                }
+            }
+            GUILayout.EndScrollView();GUILayout.EndArea();
+        }
+        void DrawModelDeletion(float barHeight)
+        {
+            var rect=new Rect(Mathf.Max(8,Screen.width-405),barHeight+5,395,Mathf.Max(110,Screen.height-barHeight-48));
+            GUI.Box(rect,"Terv elemeinek törlése");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+24,rect.width-20,rect.height-34));
+            deleteModelsScroll=GUILayout.BeginScrollView(deleteModelsScroll);
+            if(plan?.Root!=null)
+            {
+                foreach(string groupName in new[]{"sofas","standingDesks","doubleBeds","tvStands","ledTvs",
+                    "rugs","dividerShelves","tables","mirroredWardrobes","laminates","cabinetry",
+                    "appliances","furniture","objects"})
+                {
+                    var group=plan.Root.Element(groupName);
+                    if(group==null)continue;
+                    foreach(var item in group.Elements().Where(e=>e.Attribute("id")!=null).ToList())
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label(groupName+" / "+S(item,"id"),GUILayout.Width(250));
+                        if(GUILayout.Button("Törlés",GUILayout.Width(90)))
+                        {item.Remove();SaveLaminates();RefreshViewerGeometry();}
+                        GUILayout.EndHorizontal();
+                    }
+                }
+            }
+            GUILayout.EndScrollView();GUILayout.EndArea();
+        }
+        void SaveLaminates()
+        {
+            if(plan==null)return;
+            try
+            {
+#if UNITY_EDITOR
+                string path=Path.Combine(Application.dataPath,"Resources","Plans","sample.xml");
+#else
+                string path=VisibilityPath;
+#endif
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path,plan.ToString(),System.Text.Encoding.UTF8);
+#if UNITY_EDITOR
+                UnityEditor.AssetDatabase.Refresh();
+#endif
+                status="Terv mentve.";
+            }
+            catch(Exception ex){status="Mentési hiba: "+ex.Message;}
+        }
         void DrawWardrobeEditor(float barHeight)
         {
             var rect=new Rect(Mathf.Max(8,Screen.width-405),barHeight+5,395,Mathf.Max(100,Screen.height-barHeight-48));
