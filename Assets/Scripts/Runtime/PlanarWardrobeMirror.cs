@@ -21,12 +21,21 @@ namespace BuildYourFurniture
             mirrorMaterial=new Material(shader);
             GetComponent<Renderer>().material=mirrorMaterial;
         }
+        void LateUpdate()
+        {
+            // URP does not reliably invoke OnWillRenderObject for this surface.
+            RenderReflection(Camera.main);
+        }
         void OnWillRenderObject()
         {
-            Camera source=Camera.current;
+            RenderReflection(Camera.current);
+        }
+        void RenderReflection(Camera source)
+        {
             if(rendering||source==null||source==reflectionCamera||!isActiveAndEnabled)return;
             if(source.cameraType==CameraType.Preview||source.cameraType==CameraType.Reflection)return;
             if(lastFrame==Time.frameCount)return;
+            if(Vector3.Dot(source.transform.position-transform.position,transform.forward)<=0f)return;
             lastFrame=Time.frameCount;
             if(mirrorMaterial==null)Initialize();
             if(reflectionCamera==null)
@@ -58,6 +67,8 @@ namespace BuildYourFurniture
             Vector3 up=Vector3.Reflect(source.transform.up,normal);
             reflectionCamera.transform.SetPositionAndRotation(reflectedPosition,Quaternion.LookRotation(forward,up));
             reflectionCamera.projectionMatrix=source.projectionMatrix;
+            reflectionCamera.clearFlags=CameraClearFlags.Skybox;
+            reflectionCamera.depthTextureMode=DepthTextureMode.None;
             mirrorMaterial.mainTexture=reflectionTexture;
             if(mirrorMaterial.HasProperty("_BaseMap"))mirrorMaterial.SetTexture("_BaseMap",reflectionTexture);
             rendering=true;
