@@ -1635,16 +1635,6 @@ namespace BuildYourFurniture
             return false;
 #endif
         }
-        void DrawEditorInputShield()
-        {
-            if(Event.current.type!=EventType.MouseDown&&
-               Event.current.type!=EventType.MouseUp&&
-               Event.current.type!=EventType.MouseDrag&&
-               Event.current.type!=EventType.ScrollWheel)return;
-            // An opaque GUI box is drawn first; the input guard also stops the 3D camera.
-            // Consume events only in the parts not owned by active editor controls.
-            if(TexturePickerPopup.IsOpen)return;
-        }
         void HandleFurnitureMouse()
         {
             if(worldCamera==null||plan==null)return;
