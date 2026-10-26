@@ -619,10 +619,10 @@ namespace BuildYourFurniture
                         foreach(var vertex in other.Outline)
                         {
                             vertex.XFormula=System.Text.RegularExpressions.Regex.Replace(vertex.XFormula??"",
-                                @"(?<![A-Za-z0-9_])"+System.Text.RegularExpressions.Regex.Escape(oldId)+@"(?=\\.)",
+                                @"(?<![A-Za-z0-9_])"+System.Text.RegularExpressions.Regex.Escape(oldId)+@"(?=\.)",
                                 newId,System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                             vertex.YFormula=System.Text.RegularExpressions.Regex.Replace(vertex.YFormula??"",
-                                @"(?<![A-Za-z0-9_])"+System.Text.RegularExpressions.Regex.Escape(oldId)+@"(?=\\.)",
+                                @"(?<![A-Za-z0-9_])"+System.Text.RegularExpressions.Regex.Escape(oldId)+@"(?=\.)",
                                 newId,System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                         }
                     openPanels.Remove(oldId);p.Id=newId;openPanels.Add(newId);fields.Clear();dirty=true;Rebuild();}}
