@@ -32,6 +32,7 @@ namespace BuildYourFurniture
         }
         void RenderReflection(Camera source)
         {
+            if(UnityEngine.XR.XRSettings.isDeviceActive)return; // Mono planar mirror is not stereo-safe on Quest.
             if(rendering||source==null||source==reflectionCamera||!isActiveAndEnabled)return;
             if(source.cameraType==CameraType.Preview||source.cameraType==CameraType.Reflection)return;
             if(lastFrame==Time.frameCount)return;
