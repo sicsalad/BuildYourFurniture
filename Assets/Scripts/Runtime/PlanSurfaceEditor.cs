@@ -28,7 +28,7 @@ namespace BuildYourFurniture
         {
             string old=S(target,key);
             var labels=new[]{"Nincs textúra"}.Concat(names).ToArray();
-            int index=Array.FindIndex(names,n=>string.Equals(n,old,StringComparison.OrdinalIgnoreCase));
+            int index=Array.FindIndex(names,n=>string.Equals("Textures/"+n,old,StringComparison.OrdinalIgnoreCase)||string.Equals(n,old,StringComparison.OrdinalIgnoreCase));
             int next=GUILayout.SelectionGrid(index+1,labels,2);
             if(next==index+1)return false;
             target.SetAttributeValue(key,next==0?"":"Textures/"+names[next-1]);
@@ -71,16 +71,18 @@ namespace BuildYourFurniture
             bool changed=false;
             GUILayout.Label("Kijelölt: "+S(item,"id"),GUI.skin.box);
             if(GUILayout.Button("Felület másolása"))
-            {copied=new XElement(item);copiedKind=group;}
+            {copied=new XElement(tab==0?(item.Element("surface")??new XElement("surface")):item);copiedKind=group;}
             if(copied!=null&&copiedKind==group&&GUILayout.Button("Másolt felület beillesztése ide"))
             {
+                var destination=tab==0?(item.Element("surface")??new XElement("surface")):item;
+                if(tab==0&&destination.Parent==null)item.Add(destination);
                 foreach(var attr in copied.Attributes())
                 {
                     if(attr.Name.LocalName=="id"||attr.Name.LocalName=="name"||
                        attr.Name.LocalName=="x"||attr.Name.LocalName=="y"||
                        attr.Name.LocalName=="x1"||attr.Name.LocalName=="y1"||
                        attr.Name.LocalName=="roomId"||attr.Name.LocalName=="wallIds")continue;
-                    item.SetAttributeValue(attr.Name,attr.Value);
+                    destination.SetAttributeValue(attr.Name,attr.Value);
                 }
                 changed=true;
             }
