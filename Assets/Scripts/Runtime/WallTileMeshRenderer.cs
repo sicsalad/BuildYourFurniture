@@ -5,9 +5,34 @@ using System.Linq;
 using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Networking;
+using System.Collections;
 
 namespace BuildYourFurniture
 {
+    public sealed class WallTileRemoteTexture : MonoBehaviour
+    {
+        public string Url;
+        public Material Target;
+        IEnumerator Start()
+        {
+            if (string.IsNullOrEmpty(Url) || Target == null) yield break;
+            using (var request = UnityWebRequestTexture.GetTexture(Url))
+            {
+                yield return request.SendWebRequest();
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogWarning("Wall tile texture download failed: " + Url + " | " + request.error);
+                    yield break;
+                }
+                var texture = DownloadHandlerTexture.GetContent(request);
+                if (texture == null) yield break;
+                Target.mainTexture = texture;
+                if (Target.HasProperty("_BaseMap")) Target.SetTexture("_BaseMap",texture);
+            }
+        }
+    }
+
     public static class WallTileMeshRenderer
     {
         static float N(XElement e, string key, float fallback = 0f)
@@ -118,6 +143,13 @@ namespace BuildYourFurniture
                 bool repeatTexture=S(finish,"textureMode","stretch")=="tile";
                 bool rotateTexture=N(finish,"textureRotation")>=45;
                 var tileMat = Material(tileColor,tileTexture,N(finish,"smoothness",.7f));
+                if (tileTexture == null && !string.IsNullOrEmpty(S(finish,"textureUrl")))
+                {
+                    var loader = new GameObject("TileTextureLoader_"+S(finish,"id")).AddComponent<WallTileRemoteTexture>();
+                    loader.Url = S(finish,"textureUrl");
+                    loader.Target = tileMat;
+                    register(loader.gameObject);
+                }
                 Color verticalGroutColor;
                 if (!ColorUtility.TryParseHtmlString(S(finish,"verticalGroutColor",S(finish,"groutColor","#B6B0A9")),out verticalGroutColor))
                     verticalGroutColor=groutColor;
