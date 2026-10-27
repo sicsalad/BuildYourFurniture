@@ -27,7 +27,8 @@ namespace BuildYourFurniture
             pointer.positionCount=2;
             pointer.startWidth=.008f;pointer.endWidth=.002f;
             pointer.useWorldSpace=true;
-            pointer.material=new Material(Shader.Find("Sprites/Default"));
+            var rayShader=Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            if(rayShader!=null)pointer.material=new Material(rayShader);
             pointer.startColor=Color.cyan;pointer.endColor=Color.cyan;
             var info=new GameObject("Quest help panel");
             hint=info.AddComponent<TextMesh>();
@@ -35,6 +36,21 @@ namespace BuildYourFurniture
             hint.anchor=TextAnchor.MiddleCenter;hint.alignment=TextAlignment.Center;
             hint.color=Color.white;
             hint.text="BuildYourFurniture VR\nBal kar: mozgas | Jobb kar: fordulas\nJobb ravasz: targy megnevezese";
+        }
+        void Start()
+        {
+            // FurnitureApp positions the camera from XML after AddComponent/Awake.
+            RefreshDevices();
+            Vector3 initialPosition=transform.position;
+            Quaternion initialRotation=transform.rotation;
+            Quaternion trackedRotation;
+            Vector3 trackedPosition;
+            if(head.TryGetFeatureValue(CommonUsages.deviceRotation,out trackedRotation))
+                origin.rotation=Quaternion.Euler(0f,initialRotation.eulerAngles.y-trackedRotation.eulerAngles.y,0f);
+            else origin.rotation=Quaternion.Euler(0f,initialRotation.eulerAngles.y,0f);
+            if(head.TryGetFeatureValue(CommonUsages.devicePosition,out trackedPosition))
+                origin.position=initialPosition-origin.rotation*trackedPosition;
+            else origin.position=initialPosition;
         }
         void OnEnable(){RefreshDevices();}
         void RefreshDevices()
