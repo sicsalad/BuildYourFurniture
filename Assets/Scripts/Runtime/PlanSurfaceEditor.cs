@@ -108,13 +108,17 @@ namespace BuildYourFurniture
                 {
                     changed|=Number(item,"startHeight","Kezdőmagasság (mm)",100,0,3000);
                     changed|=Number(item,"rows","Sorok",1,1,50);
-                    GUILayout.Label("Falazonosítók: "+S(item,"wallIds"));
+                    GUILayout.Label("Csempézendő falak (több is választható):");
+                    GUILayout.Label("Kijelölt: "+S(item,"wallIds"));
                     foreach(var wall in plan.Root.Element("walls")?.Elements("wall")??Enumerable.Empty<XElement>())
                     {
                         string id=S(wall,"id");
                         var ids=S(item,"wallIds").Split(new[]{','},StringSplitOptions.RemoveEmptyEntries).ToList();
                         bool enabled=ids.Contains(id);
-                        bool toggled=GUILayout.Toggle(enabled,id);
+                        float dx=N(wall,"x1",0)-N(wall,"x",0);
+                        float dy=N(wall,"y1",0)-N(wall,"y",0);
+                        int length=Mathf.RoundToInt(Mathf.Sqrt(dx*dx+dy*dy));
+                        bool toggled=GUILayout.Toggle(enabled,id+"  ("+length+" mm)");
                         if(toggled!=enabled)
                         {
                             if(toggled)ids.Add(id);else ids.Remove(id);
@@ -129,11 +133,70 @@ namespace BuildYourFurniture
                     if(GUILayout.Button("Fektetés iránya: "+direction))
                     {item.SetAttributeValue("direction",direction=="x"?"y":"x");changed=true;}
                 }
-                GUILayout.Label("Fuga színe");
-                changed|=ColorChoice(item,"groutColor");
+                if(tab==1)
+                {
+                    GUILayout.Label("Vízszintes fuga – Keracolor FF");
+                    changed|=KeracolorChoice(item,"groutColor");
+                    GUILayout.Label("Függőleges fuga – Keracolor FF");
+                    changed|=KeracolorChoice(item,"verticalGroutColor","groutColor");
+                }
+                else
+                {
+                    GUILayout.Label("Fuga színe – Keracolor FF");
+                    changed|=KeracolorChoice(item,"groutColor");
+                }
             }
             if(changed)saveAndRefresh();
             GUILayout.EndScrollView();GUILayout.EndArea();
+        }
+        // Keracolor FF catalogue swatches, approximate sRGB values for on-screen preview.
+        // The numeric manufacturer codes are stored alongside the HEX colors in the plan.
+        static readonly string[] KeracolorCodes={
+            "100","103","110","111","112","113","114","120","130","131","132",
+            "160","133","134","135","142","141","140","145","143","136","144",
+            "149","174","170","181"
+        };
+        static readonly string[] KeracolorNames={
+            "Fehér","Holdfény","Manhattan 2000","Ezüstszürke","Középszürke",
+            "Cementszürke","Antracit","Fekete","Jázmin","Vanília","Bézs 2000",
+            "Magnólia","Homok","Selyem","Aranypor","Gesztenye","Karamell",
+            "Korall","Siennai föld","Terrakotta","Tőzeg","Csokoládé",
+            "Vulkáni homok","Tornádó","Krókusz","Jadezöld"
+        };
+        static readonly string[] KeracolorHex={
+            "#F5F5F3","#E8EAE6","#E1E1E1","#EBEBEB","#9F9F9F",
+            "#888982","#4C5051","#373431","#F6E9D4","#FFF1D4","#E9D2B5",
+            "#F0D0C0","#B5A08C","#A4917E","#AD8968","#B48665","#C59B7C",
+            "#D09B8B","#C57D64","#925F52","#765F55","#664D43",
+            "#544B46","#626A67","#D4DFEF","#A7C8AA"
+        };
+        static bool KeracolorChoice(XElement item,string key,string fallbackKey=null)
+        {
+            string current=S(item,key,fallbackKey==null?"":S(item,fallbackKey));
+            string code=S(item,key+"Code");
+            int chosen=Array.IndexOf(KeracolorCodes,code);
+            if(chosen<0)chosen=Array.FindIndex(KeracolorHex,h=>string.Equals(h,current,StringComparison.OrdinalIgnoreCase));
+            GUILayout.Label(chosen<0?"Egyedi szín: "+current:
+                "Kiválasztva: "+KeracolorCodes[chosen]+" "+KeracolorNames[chosen]);
+            bool changed=false;
+            for(int i=0;i<KeracolorCodes.Length;i++)
+            {
+                if(i%2==0)GUILayout.BeginHorizontal();
+                Color preview;
+                ColorUtility.TryParseHtmlString(KeracolorHex[i],out preview);
+                Color previous=GUI.backgroundColor;
+                GUI.backgroundColor=Color.Lerp(Color.white,preview,.65f);
+                if(GUILayout.Button(KeracolorCodes[i]+" "+KeracolorNames[i],
+                    GUILayout.MinHeight(28)))
+                {
+                    item.SetAttributeValue(key,KeracolorHex[i]);
+                    item.SetAttributeValue(key+"Code",KeracolorCodes[i]);
+                    changed=true;
+                }
+                GUI.backgroundColor=previous;
+                if(i%2==1||i==KeracolorCodes.Length-1)GUILayout.EndHorizontal();
+            }
+            return changed;
         }
         static bool ColorChoice(XElement item,string key)
         {
