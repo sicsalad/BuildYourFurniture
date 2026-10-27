@@ -1458,7 +1458,21 @@ namespace BuildYourFurniture
                     if(sample==null)throw new FileNotFoundException("A teljes lakásterv hiányzik.");
                     LoadPlan(sample.text);
                 }
-                else LoadPlan(File.ReadAllText(path));
+                else
+                {
+                    Debug.Log("Loading saved apartment XML from: " + Path.GetFullPath(path));
+                    string xml=File.ReadAllText(path);
+                    try { LoadPlan(xml); }
+                    catch(System.Xml.XmlException ex)
+                    {
+                        var lines=xml.Split(new[]{(char)10});
+                        string line=ex.LineNumber>0&&ex.LineNumber<=lines.Length?lines[ex.LineNumber-1]:"(line unavailable)";
+                        Debug.LogError("Invalid saved apartment XML: "+Path.GetFullPath(path)+
+                            " | line "+ex.LineNumber+", column "+ex.LinePosition+
+                            " | content: "+line.Substring(0,Math.Min(350,line.Length)));
+                        throw;
+                    }
+                }
                 RememberPlanSelection(path);
                 apartmentOverview=true;
                 status="Terv kiválasztva: "+(path=="bundled"?"Teljes lakás":Path.GetFileName(path));
