@@ -110,7 +110,11 @@ namespace BuildYourFurniture
                 bool repeatTexture=S(finish,"textureMode","stretch")=="tile";
                 bool rotateTexture=N(finish,"textureRotation")>=45;
                 var tileMat = Material(tileColor,tileTexture,N(finish,"smoothness",.7f));
+                Color verticalGroutColor;
+                if (!ColorUtility.TryParseHtmlString(S(finish,"verticalGroutColor",S(finish,"groutColor","#B6B0A9")),out verticalGroutColor))
+                    verticalGroutColor=groutColor;
                 var groutMat = Material(groutColor,null,0);
+                var verticalGroutMat = Material(verticalGroutColor,null,0);
                 foreach (var wall in Items(root,"walls","wall"))
                 {
                     string wallId = S(wall,"id");
@@ -127,6 +131,7 @@ namespace BuildYourFurniture
                     if(S(finish,"side")=="reverse")inward=-inward;
                     var cuts=openings.Where(o=>S(o,"wallId")==wallId).ToList();
                     var gv=new List<Vector3>(); var guv=new List<Vector2>(); var gi=new List<int>();
+                    var vv=new List<Vector3>(); var vuv=new List<Vector2>(); var vi=new List<int>();
                     var tv=new List<Vector3>(); var tuv=new List<Vector2>(); var ti=new List<int>();
                     // All coordinates are relative to the finished interior wall face (at the wall line).
                     // Grout lies 0.5 mm outside that face; tile faces are 8 mm further inside the room.
@@ -161,6 +166,12 @@ namespace BuildYourFurniture
                                 if(cuts.Any(o=>mx>N(o,"offset")/1000f && mx<(N(o,"offset")+N(o,"width"))/1000f &&
                                     my>N(o,"bottom")/1000f && my<(N(o,"bottom")+N(o,"height"))/1000f))continue;
                                 Quad(gv,guv,gi,a,along,inward,groutDepth,sx0,sx1,sy0,sy1,0,1,0,1);
+                                // Vertical joints use a second mesh in front of the horizontal grout.
+                                float joint0=Mathf.Max(sx0,x0-grout*.5f);
+                                float joint1=Mathf.Min(sx1,x0+grout*.5f);
+                                if(joint1>joint0)
+                                    Quad(vv,vuv,vi,a,along,inward,groutDepth+.0002f,
+                                        joint0,joint1,sy0,sy1,0,1,0,1);
                                 // Grout is only removed at the original tile borders, not at opening cuts.
                                 float tx0=Mathf.Max(sx0,x0+grout*.5f);
                                 float tx1=Mathf.Min(sx1,x1-grout*.5f);
@@ -176,6 +187,8 @@ namespace BuildYourFurniture
                         }
                     }
                     Emit("WallGrout_"+wallId,gv,guv,gi,groutMat,register);
+                    if(verticalGroutColor!=groutColor)
+                        Emit("WallVerticalGrout_"+S(finish,"id","Tile")+"_"+wallId,vv,vuv,vi,verticalGroutMat,register);
                     Emit(S(finish,"id","Tile")+"_"+wallId,tv,tuv,ti,tileMat,register);
                 }
             }
