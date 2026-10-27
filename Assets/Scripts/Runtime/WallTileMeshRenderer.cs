@@ -57,7 +57,7 @@ namespace BuildYourFurniture
         }
         static void Quad(List<Vector3> verts, List<Vector2> uv, List<int> indices,
             Vector2 a, Vector2 along, Vector2 inward, float depth,
-            float x0, float x1, float y0, float y1, float u0, float u1, float v0, float v1)
+            float x0, float x1, float y0, float y1, float u0, float u1, float v0, float v1, bool reverse = false)
         {
             int n = verts.Count;
             Vector2 p0 = a + along * x0 + inward * depth;
@@ -69,8 +69,16 @@ namespace BuildYourFurniture
             uv.Add(new Vector2(u0,v0)); uv.Add(new Vector2(u1,v0));
             uv.Add(new Vector2(u1,v1)); uv.Add(new Vector2(u0,v1));
             // Front-facing toward the room (positive inward normal).
-            indices.Add(n); indices.Add(n+1); indices.Add(n+2);
-            indices.Add(n); indices.Add(n+2); indices.Add(n+3);
+            if (reverse)
+            {
+                indices.Add(n); indices.Add(n+2); indices.Add(n+1);
+                indices.Add(n); indices.Add(n+3); indices.Add(n+2);
+            }
+            else
+            {
+                indices.Add(n); indices.Add(n+1); indices.Add(n+2);
+                indices.Add(n); indices.Add(n+2); indices.Add(n+3);
+            }
         }
         static void Emit(string name, List<Vector3> vertices, List<Vector2> uv,
             List<int> triangles, Material material, Action<GameObject> register)
@@ -128,7 +136,8 @@ namespace BuildYourFurniture
                     if (length < .001f) continue;
                     Vector2 along=diff/length;
                     Vector2 inward=new Vector2(-along.y,along.x);
-                    if(S(finish,"side")=="reverse")inward=-inward;
+                    bool reverse=S(finish,"side")=="reverse";
+                    if(reverse)inward=-inward;
                     var cuts=openings.Where(o=>S(o,"wallId")==wallId).ToList();
                     var gv=new List<Vector3>(); var guv=new List<Vector2>(); var gi=new List<int>();
                     var vv=new List<Vector3>(); var vuv=new List<Vector2>(); var vi=new List<int>();
@@ -165,13 +174,13 @@ namespace BuildYourFurniture
                                 float mx=(sx0+sx1)*.5f,my=(sy0+sy1)*.5f;
                                 if(cuts.Any(o=>mx>N(o,"offset")/1000f && mx<(N(o,"offset")+N(o,"width"))/1000f &&
                                     my>N(o,"bottom")/1000f && my<(N(o,"bottom")+N(o,"height"))/1000f))continue;
-                                Quad(gv,guv,gi,a,along,inward,groutDepth,sx0,sx1,sy0,sy1,0,1,0,1);
+                                Quad(gv,guv,gi,a,along,inward,groutDepth,sx0,sx1,sy0,sy1,0,1,0,1,reverse);
                                 // Vertical joints use a second mesh in front of the horizontal grout.
                                 float joint0=Mathf.Max(sx0,x0-grout*.5f);
                                 float joint1=Mathf.Min(sx1,x0+grout*.5f);
                                 if(joint1>joint0)
                                     Quad(vv,vuv,vi,a,along,inward,groutDepth+.0002f,
-                                        joint0,joint1,sy0,sy1,0,1,0,1);
+                                        joint0,joint1,sy0,sy1,0,1,0,1,reverse);
                                 // Grout is only removed at the original tile borders, not at opening cuts.
                                 float tx0=Mathf.Max(sx0,x0+grout*.5f);
                                 float tx1=Mathf.Min(sx1,x1-grout*.5f);
@@ -182,7 +191,7 @@ namespace BuildYourFurniture
                                     rotateTexture?(ty0-y0)/height*(repeatTexture?height/textureUnit:1):(tx0-x0)/width*(repeatTexture?width/textureUnit:1),
                                     rotateTexture?(ty1-y0)/height*(repeatTexture?height/textureUnit:1):(tx1-x0)/width*(repeatTexture?width/textureUnit:1),
                                     rotateTexture?(tx0-x0)/width*(repeatTexture?width/textureUnit:1):(ty0-y0)/height*(repeatTexture?height/textureUnit:1),
-                                    rotateTexture?(tx1-x0)/width*(repeatTexture?width/textureUnit:1):(ty1-y0)/height*(repeatTexture?height/textureUnit:1));
+                                    rotateTexture?(tx1-x0)/width*(repeatTexture?width/textureUnit:1):(ty1-y0)/height*(repeatTexture?height/textureUnit:1),reverse);
                             }
                         }
                     }
