@@ -15,6 +15,10 @@ namespace BuildYourFurniture
         TextMesh hint;
         InputDevice head,left,right;
         bool turnReady=true,triggerHeld;
+        public float HeightSpeed=.8f;
+        public float MinEyeHeight=.35f;
+        public float MaxEyeHeight=2.6f;
+        float heightOffset;
         public bool Active=>XRSettings.isDeviceActive;
         void Awake()
         {
@@ -35,7 +39,7 @@ namespace BuildYourFurniture
             hint.fontSize=44;hint.characterSize=.006f;
             hint.anchor=TextAnchor.MiddleCenter;hint.alignment=TextAlignment.Center;
             hint.color=Color.white;
-            hint.text="BuildYourFurniture VR\nBal kar: mozgas | Jobb kar: fordulas\nJobb ravasz: targy megnevezese";
+            hint.text="BuildYourFurniture VR\nBal kar: mozgas | Jobb kar: fordulas / magassag\nJobb ravasz: targy megnevezese";
         }
         void Start()
         {
@@ -80,6 +84,13 @@ namespace BuildYourFurniture
             }
             if(right.TryGetFeatureValue(CommonUsages.primary2DAxis,out axis))
             {
+                if(Mathf.Abs(axis.y)>.2f)
+                {
+                    float targetHeight=Mathf.Clamp(transform.position.y+axis.y*HeightSpeed*Time.deltaTime,MinEyeHeight,MaxEyeHeight);
+                    float delta=targetHeight-transform.position.y;
+                    origin.position+=Vector3.up*delta;
+                    heightOffset+=delta;
+                }
                 if(Mathf.Abs(axis.x)<.35f)turnReady=true;
                 else if(turnReady&&Mathf.Abs(axis.x)>.75f)
                 {
