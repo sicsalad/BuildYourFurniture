@@ -1452,30 +1452,46 @@ namespace BuildYourFurniture
         {
             try
             {
+                string selectedPath=path;
+                string xml;
                 if(path=="bundled")
                 {
                     var sample=Resources.Load<TextAsset>("Plans/sample");
                     if(sample==null)throw new FileNotFoundException("A teljes lakásterv hiányzik.");
-                    LoadPlan(sample.text);
+                    xml=sample.text;
                 }
                 else
                 {
-                    Debug.Log("Loading saved apartment XML from: " + Path.GetFullPath(path));
-                    string xml=File.ReadAllText(path);
-                    try { LoadPlan(xml); }
-                    catch(System.Xml.XmlException ex)
-                    {
-                        var lines=xml.Split(new[]{(char)10});
-                        string line=ex.LineNumber>0&&ex.LineNumber<=lines.Length?lines[ex.LineNumber-1]:"(line unavailable)";
-                        Debug.LogError("Invalid saved apartment XML: "+Path.GetFullPath(path)+
-                            " | line "+ex.LineNumber+", column "+ex.LinePosition+
-                            " | content: "+line.Substring(0,Math.Min(350,line.Length)));
-                        throw;
-                    }
+                    Debug.Log("Loading saved apartment XML from: "+Path.GetFullPath(path));
+                    xml=File.ReadAllText(path);
                 }
-                RememberPlanSelection(path);
+
+                try
+                {
+                    LoadPlan(xml);
+                }
+                catch(System.Xml.XmlException ex)
+                {
+                    var lines=xml.Split(new[]{(char)10});
+                    string line=ex.LineNumber>0&&ex.LineNumber<=lines.Length?lines[ex.LineNumber-1]:"(line unavailable)";
+                    Debug.LogError("Invalid apartment XML: "+selectedPath+
+                        " | line "+ex.LineNumber+", column "+ex.LinePosition+
+                        " | content: "+line.Substring(0,Math.Min(350,line.Length)));
+                    if(path=="bundled")throw;
+
+                    // Never overwrite or delete the malformed saved plan.
+                    // Recover by opening the validated bundled plan instead.
+                    var fallback=Resources.Load<TextAsset>("Plans/sample");
+                    if(fallback==null)throw new InvalidDataException("A mentett XML hibás, és a beépített terv hiányzik.",ex);
+                    LoadPlan(fallback.text);
+                    selectedPath="bundled";
+                    Debug.LogWarning("A mentett XML hibás, ezért a beépített lakásterv töltődött be. A hibás fájl változatlan maradt: "+Path.GetFullPath(path));
+                    status="A mentett XML hibás (sor "+ex.LineNumber+"). A beépített terv nyílt meg; a hibás fájl megmaradt: "+Path.GetFileName(path);
+                }
+
+                RememberPlanSelection(selectedPath);
                 apartmentOverview=true;
-                status="Terv kiválasztva: "+(path=="bundled"?"Teljes lakás":Path.GetFileName(path));
+                if(selectedPath==path)status="Terv kiválasztva: "+(path=="bundled"?"Teljes lakás":Path.GetFileName(path));
                 Show("main");
             }
             catch(Exception ex){status="Terv betöltési hiba: "+ex.Message;Debug.LogException(ex);}
