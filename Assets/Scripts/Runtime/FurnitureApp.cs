@@ -34,6 +34,8 @@ namespace BuildYourFurniture
         Texture2D tileTexture;
         readonly PlanSurfaceEditor surfaceEditor=new PlanSurfaceEditor();
         bool showSurfaceLabels;
+        bool showKitchenMaterials;
+        Vector2 kitchenMaterialsScroll;
         bool apartmentOverview=true;
         bool roomNavigationOpen;
         XElement selectedFurniture;
@@ -160,6 +162,42 @@ namespace BuildYourFurniture
         bool furnitureResizeMode;
         int furnitureEditMode; // 0 Move, 1 Resize, 2 Rotate
         readonly string[] addKinds={"Gardrób / szekrény","Íróasztal","Franciaágy","Kanapé","TV-állvány","LED TV","Térelválasztó polc","Étkezőasztal","Dohányzóasztal","Szőnyeg","Könyv","Cserepes virág","Növény"};
+        void DrawKitchenMaterials(float barHeight)
+        {
+            var cabinetry=plan?.Root?.Element("cabinetry");
+            var defaults=cabinetry?.Element("defaults");
+            if(defaults==null)return;
+            var rect=new Rect(Mathf.Max(8,Screen.width-400),barHeight+45,390,Mathf.Min(550,Screen.height-barHeight-55));
+            DrawOpaquePanel(rect);GUI.Box(rect,"Konyha anyagai");
+            GUILayout.BeginArea(new Rect(rect.x+10,rect.y+27,rect.width-20,rect.height-37));
+            kitchenMaterialsScroll=GUILayout.BeginScrollView(kitchenMaterialsScroll);
+            bool changed=false;
+            foreach(string key in new[]{"bodyColor","frontColor","countertopColor"})
+            {
+                GUILayout.Label(key=="bodyColor"?"Bútorlap":key=="frontColor"?"Ajtófront":"Munkalap színe");
+                string old=(string)defaults.Attribute(key)??"#FFFFFF";
+                string next=GUILayout.TextField(old);
+                Color parsed;
+                if(next!=old&&ColorUtility.TryParseHtmlString(next,out parsed)){defaults.SetAttributeValue(key,next);changed=true;}
+                foreach(var swatch in CabinetAppearanceLibrary.Presets)
+                    if(GUILayout.Button(swatch.Name+" "+swatch.Hex))
+                    {defaults.SetAttributeValue(key,swatch.Hex);changed=true;}
+            }
+            GUILayout.Label("Munkalap textúrája");
+            TexturePickerPopup.Button("Textúra választása",(string)defaults.Attribute("countertopTexture")??"Textures/munkalap",id=>
+            {
+                defaults.SetAttributeValue("countertopTexture",id);
+                foreach(var top in cabinetry.Element("countertops").Elements("countertop"))top.SetAttributeValue("texture",id);
+                SaveLaminates();RefreshViewerGeometry();
+            });
+            if(changed)
+            {
+                foreach(var top in cabinetry.Element("countertops").Elements("countertop"))
+                    top.SetAttributeValue("color",(string)defaults.Attribute("countertopColor"));
+                SaveLaminates();RefreshViewerGeometry();
+            }
+            GUILayout.EndScrollView();GUILayout.EndArea();
+        }
         void DrawCabinetVisibilityMenu()
         {
             float barHeight=Mathf.Max(48,Screen.height*.085f);
@@ -211,6 +249,8 @@ namespace BuildYourFurniture
                     }
                 }
             }
+            if(GUI.Button(new Rect(140,barHeight+8,175,30),showKitchenMaterials?"Anyagok bezárása":"Konyha anyagai"))showKitchenMaterials=!showKitchenMaterials;
+            if(showKitchenMaterials)DrawKitchenMaterials(barHeight);
             if(surfaceEditor.Visible)surfaceEditor.Draw(plan,()=>{SaveLaminates();RefreshViewerGeometry();});
             else if(!addMenuOpen)DrawSelectedFurniture(barHeight);
         }

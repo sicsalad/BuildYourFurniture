@@ -61,49 +61,31 @@
     <window id="WIN03" wallId="W15" offset="250" bottom="1700" width="450" height="450" fill="solid" color="#89BDD3" name="Kamra kis ablaka"/>
   </windows>
   <radiators><radiator id="RAD01" wallId="W01" offset="830" bottom="100" length="1200" height="730" depth="210" sections="12" modelId="M01" color="#D6D1BF"/></radiators>
-  <furniture><item id="F08" modelId="M02" roomId="R01" type="refrigerator" x="290" y="1870" rotation="90" /></furniture>
+  <furniture/>
   <cabinetry>
-    <visibility>
-      <cabinet id="F01" visible="true"/>
-      <cabinet id="F02" visible="true"/>
-      <cabinet id="F03" visible="true"/>
-      <cabinet id="F04" visible="true"/>
-      <cabinet id="F06" visible="true"/>
-      <cabinet id="F07" visible="true"/>
-    </visibility>
-    <defaults bodyColor="#20385B" frontColor="#20385B" plinthColor="#A8A9AA" handleColor="#101114" boardThickness="18" backThickness="6" edgeBandThickness="2" braceWidth="100" drawerGap="2" handleWidth="120" handleDiameter="10" frontFinish="mattePainted" frontCornerRadius="2" />
-    <!-- Cabinet local -Z is front; rotation=90 faces the entrance side of W02. -->
-    <cabinet id="F01" name="Mosogep helye" type="empty" typeRef="empty" kind="base" width="700" height="860" depth="560" plinth="0" x="2380" y="350" rotation="90">
-      <position mode="plan" roomId="R01"><plan x="2380" y="350"/><room x="2380" y="350"/></position>
-      <orientation mode="rotation" rotation="90"/>
-      <edges left="front,top,back,bottom" right="front,top,back,bottom" />
-      <appliance modelId="M03" width="595" height="845" depth="510" color="#303034" frontTexture="Textures/mosogep" />
-    </cabinet>
-    <cabinet id="F02" name="Suto szekreny" type="normal" typeRef="normal" kind="base" width="600" height="860" depth="560" plinth="80" alignTo="F01" side="left"><docking active="true" cabinetId="F01" element="CABINET" face="right" targetElement="CABINET" targetFace="left"/>
-      <sections><section type="drawer" height="180" /><section type="oven" height="600" modelId="M04" frontTexture="Textures/suto" /></sections>
-    </cabinet>
-    <cabinet id="F03" name="Haromfiokos 35" type="normal" typeRef="normal" kind="base" width="350" height="860" depth="560" plinth="80" alignTo="F02" side="left"><docking active="true" cabinetId="F02" element="CABINET" face="right" targetElement="CABINET" targetFace="left"/>
-      <sections><section type="drawer" height="380" /><section type="drawer" height="250" /><section type="drawer" height="150" /></sections>
-    </cabinet>
-    <!-- F04 replaces both former F04 and F05. Finished dimensions; plinth included in height. -->
-    <cabinet id="F04" name="L alaku sarokszekreny fiokkal" type="corner" typeId="corner" kind="base"
-             leftLength="950" rightLength="950" leftDepth="560" rightDepth="590"
-             height="860" plinth="80" boardThickness="18" x="1710" y="1190" rotation="0">
-      <drawer id="DR04" width="390" height="780" offset="0" />
-    </cabinet>
-    <cabinet id="F06" name="Haromfiokos 60" type="normal" typeRef="normal" kind="base" width="600" height="860" depth="560" plinth="80" x="1305" y="1920" rotation="0">
-      <sections><section type="drawer" height="380" /><section type="drawer" height="250" /><section type="drawer" height="150" /></sections>
-    </cabinet>
-    <cabinet id="F07" name="Mosogatogep helye" type="normal" typeRef="normal" kind="base" width="450" height="860" depth="560" plinth="0" alignTo="F06" side="left">
-      <sections><section type="dishwasher" height="780" color="#7E8083" /></sections>
-    </cabinet>
+    <visibility><cabinet id="A" visible="true"/><cabinet id="B" visible="true"/><cabinet id="C" visible="true"/><cabinet id="D" visible="true"/><cabinet id="E" visible="true"/><cabinet id="F" visible="true"/><cabinet id="G" visible="true"/><cabinet id="H" visible="true"/><cabinet id="I" visible="true"/><cabinet id="J" visible="true"/><cabinet id="K" visible="true"/><cabinet id="L" visible="true"/><cabinet id="M" visible="true"/><cabinet id="N" visible="true"/></visibility>
+    <defaults bodyColor="#536F85" frontColor="#536F85" plinthColor="#A8A9AA" handleColor="#20252B" boardThickness="18" backThickness="6" edgeBandThickness="2" braceWidth="100" drawerGap="2" countertopColor="#FFFFFF" countertopTexture="Textures/munkalap"/>
+    <cabinet id="A" name="Inox hűtő" type="kitchen" kind="tall" width="550" depth="550" height="1850" plinth="0" x="275" y="1925" rotation="0" style="fridge"/>
+    <cabinet id="B" name="Beépített mosogatógép" type="kitchen" kind="base" width="450" depth="550" height="860" plinth="80" x="775" y="1925" rotation="0" style="dishwasher"/>
+    <cabinet id="C" name="Fiókos 60" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="1300" y="1925" rotation="0" style="drawers" drawers="3"/>
+    <cabinet id="D" name="Mosogató két fiókkal" type="kitchen" kind="base" width="950" depth="550" height="860" plinth="80" x="2075" y="1925" rotation="0" style="sink" drawerHeights="180,600"/>
+    <cabinet id="E" name="Toldóelem" type="kitchen" kind="base" width="70" depth="550" height="860" plinth="80" x="2585" y="1925" rotation="0" style="filler"/>
+    <cabinet id="F" name="Mosógépet takaró ajtó" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="2385" y="1450" rotation="90" style="door"/>
+    <cabinet id="G" name="Electrolux sütő" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="2385" y="820" rotation="90" style="oven" drawerHeights="150"/>
+    <cabinet id="H" name="Teljes magasságú takarófront" type="kitchen" kind="base" width="70" depth="550" height="860" plinth="80" x="2385" y="470" rotation="90" style="filler"/>
+    <cabinet id="I" name="Felnyíló felső" type="kitchen" kind="wall" width="620" depth="550" height="400" plinth="0" x="310" y="1925" rotation="0" style="lift" bottom="1900"/>
+    <cabinet id="J" name="Kétajtós felső" type="kitchen" kind="wall" width="560" depth="300" height="900" plinth="0" x="900" y="2050" rotation="0" style="double" bottom="1400" shelves="3"/>
+    <cabinet id="K" name="Egyajtós felső" type="kitchen" kind="wall" width="300" depth="300" height="900" plinth="0" x="1330" y="2050" rotation="0" style="door" bottom="1400" shelves="3"/>
+    <cabinet id="L" name="Kétajtós felső" type="kitchen" kind="wall" width="560" depth="300" height="900" plinth="0" x="1760" y="2050" rotation="0" style="double" bottom="1400" shelves="3"/>
+    <cabinet id="M" name="Ferde ajtós sarok" type="kitchen" kind="wall" width="600" depth="600" height="900" plinth="0" x="2360" y="1900" rotation="0" style="diagonalCorner" bottom="1400" doorWidth="364"/>
+    <cabinet id="N" name="Egyajtós felső" type="kitchen" kind="wall" width="300" depth="300" height="900" plinth="0" x="2510" y="1420" rotation="90" style="door" bottom="1400" shelves="3"/>
     <countertops>
-      <countertop id="CT01" name="Jobb oldali munkalap" x="2380" y="1080" rotation="90" width="2160" depth="600" thickness="40" bottom="860" texture="Textures/munkalap" />
-      <countertop id="CT02" name="Ablakkal szemkozti munkalap" x="1320" y="1920" rotation="0" width="1440" depth="600" thickness="40" bottom="860" texture="Textures/munkalap" />
+      <countertop id="CT01" name="Hátsó munkalap" x="1605" y="1900" rotation="0" width="2110" depth="600" thickness="40" bottom="860" color="#FFFFFF" texture="Textures/munkalap"/>
+      <countertop id="CT02" name="Jobb oldali munkalap" x="2360" y="910" rotation="90" width="1750" depth="600" thickness="40" bottom="860" color="#FFFFFF" texture="Textures/munkalap"/>
     </countertops>
     <fixtures>
-      <fixture id="HOB01" type="gasHob" modelId="M05" countertopId="CT02" offsetFromWindow="300" offsetX="120" offsetY="0" width="600" height="130" depth="520" cutoutWidth="560" cutoutDepth="480" texture="Textures/tuzhely" textureRotation="0" color="#202024" cutout="true" />
-      <fixture id="SINK01" type="sink" modelId="M07" countertopId="CT01" position="corner" offsetX="-550" offsetY="0" width="780" depth="490" cutoutWidth="740" cutoutDepth="450" rotation="0" bowls="2" largeBowl="true" smallBowl="true" drainer="small" color="#B8BCC0" bowlColor="#454B50" cutout="true" />
+      <fixture id="SINK01" type="sink" modelId="M07" countertopId="CT01" offsetX="470" offsetY="0" width="780" depth="490" cutoutWidth="740" cutoutDepth="450" rotation="0" cutout="true"/>
+      <fixture id="HOB01" type="gasHob" modelId="M05" countertopId="CT02" offsetX="-90" offsetY="0" width="600" height="130" depth="520" cutoutWidth="560" cutoutDepth="480" texture="Textures/tuzhely" color="#202024" cutout="true"/>
     </fixtures>
   </cabinetry>
 </plan>
