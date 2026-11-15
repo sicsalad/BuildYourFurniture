@@ -74,6 +74,14 @@ namespace BuildYourFurniture
                 // Visible straight front sections on either side of the diagonal door.
                 box("frontStraight",cut*.5f,h*.5f,-d*.5f+t*.5f,w-cut,h,t,body);
                 box("sideStraight",-w*.5f+t*.5f,h*.5f,cut*.5f,t,h,d-cut,body);
+                // Exposed 300 mm return at the N-side of the corner: make the
+                // full end face a solid board, not an open edge of the mesh.
+                // It belongs to M, so hiding N cannot remove it.
+                box("exposedNsideEnd",w*.5f-t*.5f,h*.5f,-d*.5f+cut*.5f,t,h,cut,body);
+                box("exposedNsideReturn",w*.5f-cut*.5f,h*.5f,-d*.5f+t*.5f,cut,h,t,body);
+                // Close the top/bottom edges of the clipped cabinet.
+                box("cornerTop",0,h-t*.5f,0,w,t,d,body);
+                box("cornerBottom",0,t*.5f,0,w,t,d,body);
                 float doorLength=Mathf.Sqrt(2f)*cut;
                 float doorX=-w*.5f+cut*.5f,doorZ=-d*.5f+cut*.5f;
                 float doorAngle=angle+45f;
