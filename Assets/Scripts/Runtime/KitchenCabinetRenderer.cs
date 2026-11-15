@@ -67,6 +67,9 @@ namespace BuildYourFurniture
                     go.GetComponent<MeshRenderer>().sharedMaterial=mat;
                     register(go);
                 }
+                // Solid visible side panels even when adjacent cabinet N is hidden.
+                box("cornerRightFrontSide",cut*.5f,h*.5f,-d*.5f+t*.5f,w-cut,h,t,body);
+                box("cornerLeftSide",-w*.5f+t*.5f,h*.5f,cut*.5f,t,h,d-cut,body);
                 float doorLength=Mathf.Sqrt(2f)*cut;
                 float doorX=-w*.5f+cut*.5f,doorZ=-d*.5f+cut*.5f;
                 float doorAngle=angle+45f;
@@ -75,6 +78,12 @@ namespace BuildYourFurniture
                         bottom+h*.5f,oz-Mathf.Sin(r)*doorX+Mathf.Cos(r)*doorZ),
                     new Vector3(doorLength-.004f,h-.004f,frontT),front,doorAngle);
                 return;
+            }
+            if(id=="E" && N(e,"fillGap",0)>0)
+            {
+                float extra=N(e,"fillGap")/1000f;
+                // Extend E's visible filler front toward the sink unit D.
+                box("gapFill",-(w+extra)*.5f,h*.5f,-d*.5f-.01f,extra,h,.02f,front);
             }
             if(style=="fridge")
             {
