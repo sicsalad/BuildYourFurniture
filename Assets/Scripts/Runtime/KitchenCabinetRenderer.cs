@@ -10,7 +10,7 @@ namespace BuildYourFurniture
         static float N(XElement e,string key,float fallback=0) {float v;return float.TryParse((string)e?.Attribute(key),NumberStyles.Float,CultureInfo.InvariantCulture,out v)?v:fallback;}
         static string S(XElement e,string key,string fallback="") => (string)e?.Attribute(key)??fallback;
         static Color C(string value,Color fallback){Color result;return ColorUtility.TryParseHtmlString(value,out result)?result:fallback;}
-        public static void Build(XElement e,XElement defaults,Action<string,Vector3,Vector3,Color,float> cube)
+        public static void Build(XElement e,XElement defaults,Action<string,Vector3,Vector3,Color,float> cube,Action<GameObject> register=null)
         {
             string id=S(e,"id"),style=S(e,"style");
             float w=N(e,"width")/1000f,d=N(e,"depth")/1000f,h=N(e,"height")/1000f;
@@ -22,6 +22,60 @@ namespace BuildYourFurniture
             Action<string,float,float,float,float,float,float,Color> box=(name,x,y,z,sx,sy,sz,color)=>
                 cube(id+"_"+name,new Vector3(ox+Mathf.Cos(r)*x+Mathf.Sin(r)*z,bottom+y,oz-Mathf.Sin(r)*x+Mathf.Cos(r)*z),
                     new Vector3(sx,sy,sz),color,angle);
+            if(style=="diagonalCorner")
+            {
+                // Five-sided corner carcass: the front-left 300x300 mm corner is removed.
+                // Local -Z faces the kitchen; the diagonal door joins the two exposed edges.
+                float cut=Mathf.Min(.30f,Mathf.Min(w,d)*.48f);
+                Vector2[] outline={
+                    new Vector2(-w*.5f+cut,-d*.5f),
+                    new Vector2(w*.5f,-d*.5f),
+                    new Vector2(w*.5f,d*.5f),
+                    new Vector2(-w*.5f,d*.5f),
+                    new Vector2(-w*.5f,-d*.5f+cut)
+                };
+                if(register!=null)
+                {
+                    var vertices=new Vector3[outline.Length*2];
+                    for(int i=0;i<outline.Length;i++)
+                    {
+                        float x=outline[i].x,z=outline[i].y;
+                        float px=ox+Mathf.Cos(r)*x+Mathf.Sin(r)*z;
+                        float pz=oz-Mathf.Sin(r)*x+Mathf.Cos(r)*z;
+                        vertices[i]=new Vector3(px,bottom,pz);
+                        vertices[i+outline.Length]=new Vector3(px,bottom+h,pz);
+                    }
+                    var triangles=new System.Collections.Generic.List<int>();
+                    for(int i=1;i<outline.Length-1;i++)
+                    {
+                        triangles.Add(0);triangles.Add(i+1);triangles.Add(i);
+                        triangles.Add(outline.Length);triangles.Add(outline.Length+i);triangles.Add(outline.Length+i+1);
+                    }
+                    for(int i=0;i<outline.Length;i++)
+                    {
+                        int j=(i+1)%outline.Length;
+                        triangles.Add(i);triangles.Add(j);triangles.Add(outline.Length+j);
+                        triangles.Add(i);triangles.Add(outline.Length+j);triangles.Add(outline.Length+i);
+                    }
+                    var go=new GameObject(id+"_clippedCorner",typeof(MeshFilter),typeof(MeshRenderer));
+                    var mesh=new Mesh{vertices=vertices,triangles=triangles.ToArray()};
+                    mesh.RecalculateNormals();mesh.RecalculateBounds();
+                    go.GetComponent<MeshFilter>().sharedMesh=mesh;
+                    var shader=Shader.Find("Universal Render Pipeline/Lit")??Shader.Find("Standard");
+                    var mat=new Material(shader);mat.color=body;
+                    if(mat.HasProperty("_BaseColor"))mat.SetColor("_BaseColor",body);
+                    go.GetComponent<MeshRenderer>().sharedMaterial=mat;
+                    register(go);
+                }
+                float doorLength=Mathf.Sqrt(2f)*cut;
+                float doorX=-w*.5f+cut*.5f,doorZ=-d*.5f+cut*.5f;
+                float doorAngle=angle+45f;
+                cube(id+"_diagonalDoor",
+                    new Vector3(ox+Mathf.Cos(r)*doorX+Mathf.Sin(r)*doorZ,
+                        bottom+h*.5f,oz-Mathf.Sin(r)*doorX+Mathf.Cos(r)*doorZ),
+                    new Vector3(doorLength-.004f,h-.004f,frontT),front,doorAngle);
+                return;
+            }
             if(style=="fridge")
             {
                 box("inoxBody",0,h*.5f,0,w,h,d,metal);
@@ -54,14 +108,9 @@ namespace BuildYourFurniture
                 float yy=y0;
                 for(int i=0;i<count;i++)
                 {
-                    float hh=heights[i];box("drawer"+i,0,yy+hh*.5f,z,w-.004f,hh-.003f,frontT,front);
-                    box("handle"+i,0,yy+hh*.5f,z-.02f,.12f,.009f,.012f,dark);yy+=hh;
+                    float hh=heights[i];float dw=style=="sink"?N(e,"drawerFrontWidth",340)/1000f:w-.004f;float dx=style=="sink"?-w*.5f+dw*.5f+.002f:0;box("drawer"+i,dx,yy+hh*.5f,z,dw,hh-.003f,frontT,front);
+                    box("handle"+i,style=="sink"?-w*.5f+N(e,"drawerFrontWidth",340)/2000f:0,yy+hh*.5f,z-.02f,.12f,.009f,.012f,dark);yy+=hh;
                 }
-            }
-            else if(style=="diagonalCorner")
-            {
-                // The diagonal door is approximated with a rectangular front until a trapezoid mesh is available.
-                box("diagonalDoor",0,y0+inner*.5f,z,N(e,"doorWidth",364)/1000f,inner-.004f,frontT,front);
             }
             else if(style=="double")
             {
