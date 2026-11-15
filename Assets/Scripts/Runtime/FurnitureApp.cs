@@ -189,6 +189,7 @@ namespace BuildYourFurniture
             if(string.IsNullOrEmpty(kitchenColorTarget))return;
             EnsureKitchenPalette();
             var rect=new Rect(170,barHeight+43,325,325);
+            int previousDepth=GUI.depth;GUI.depth=-100;
             DrawOpaquePanel(rect);
             GUI.Box(rect,kitchenColorTarget=="bodyColor"?"Bútorlap – színválasztó":"Ajtófront – színválasztó");
             var palette=new Rect(rect.x+12,rect.y+32,300,210);
@@ -215,6 +216,7 @@ namespace BuildYourFurniture
             GUI.Label(new Rect(rect.x+96,rect.y+279,130,22),"#"+ColorUtility.ToHtmlStringRGB(selected));
             if(GUI.Button(new Rect(rect.x+235,rect.y+275,75,29),"Bezárás"))
             {SaveLaminates();kitchenColorTarget="";}
+            GUI.depth=previousDepth;
         }
         void OpenKitchenColor(string target)
         {
@@ -281,9 +283,10 @@ namespace BuildYourFurniture
             if(!cabinetVisibility.TryGetValue("N",out nVisible))nVisible=true;
             if(GUI.Button(new Rect(12,barHeight+119,150,34),nVisible?"N látszódjon: BE":"N látszódjon: KI"))
             {cabinetVisibility["N"]=!nVisible;SaveCabinetVisibility();RefreshViewerGeometry();}
-            DrawKitchenMaterials(barHeight);
             if(surfaceEditor.Visible)surfaceEditor.Draw(plan,()=>{SaveLaminates();RefreshViewerGeometry();});
             else if(!addMenuOpen)DrawSelectedFurniture(barHeight);
+            // Always render the palette above furniture/editor overlays.
+            DrawKitchenMaterials(barHeight);
         }
         void AddFurnitureKind(int kind)
         {
