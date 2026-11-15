@@ -39,9 +39,9 @@ namespace BuildYourFurniture
                     var vertices=new Vector3[outline.Length*2];
                     for(int i=0;i<outline.Length;i++)
                     {
-                        float x=outline[i].x,z=outline[i].y;
-                        float px=ox+Mathf.Cos(r)*x+Mathf.Sin(r)*z;
-                        float pz=oz-Mathf.Sin(r)*x+Mathf.Cos(r)*z;
+                        float x=outline[i].x,cornerZ=outline[i].y;
+                        float px=ox+Mathf.Cos(r)*x+Mathf.Sin(r)*cornerZ;
+                        float pz=oz-Mathf.Sin(r)*x+Mathf.Cos(r)*cornerZ;
                         vertices[i]=new Vector3(px,bottom,pz);
                         vertices[i+outline.Length]=new Vector3(px,bottom+h,pz);
                     }
