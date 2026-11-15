@@ -110,10 +110,10 @@
     <cabinet id="B" name="Beépített mosogatógép" type="kitchen" kind="base" width="450" depth="550" height="860" plinth="80" x="775" y="1925" rotation="0" style="dishwasher"/>
     <cabinet id="C" name="Fiókos 60" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="1300" y="1925" rotation="0" style="drawers" drawers="3"/>
     <cabinet id="D" name="Mosogató két fiókkal" type="kitchen" kind="base" width="950" depth="550" height="860" plinth="80" x="2075" y="1925" rotation="0" style="sink" drawerHeights="180,600" drawerFrontWidth="340"/>
-    <cabinet id="E" name="Toldóelem" type="kitchen" kind="base" width="70" depth="550" height="860" plinth="80" x="2385" y="1305" rotation="90" style="filler"/>
-    <cabinet id="F" name="Mosógépet takaró ajtó" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="2385" y="970" rotation="90" style="door"/>
-    <cabinet id="G" name="Electrolux sütő" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="2385" y="370" rotation="90" style="oven" drawerHeights="150"/>
-    <cabinet id="H" name="Teljes magasságú takarófront" type="kitchen" kind="base" width="70" depth="550" height="860" plinth="80" x="2385" y="35" rotation="90" style="filler"/>
+    <cabinet id="E" name="Toldóelem" type="kitchen" kind="base" width="120" depth="550" height="860" plinth="80" x="2385" y="1560" rotation="90" style="filler"/>
+    <cabinet id="F" name="Mosógépet takaró ajtó" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="2385" y="1200" rotation="90" style="door"/>
+    <cabinet id="G" name="Electrolux sütő" type="kitchen" kind="base" width="600" depth="550" height="860" plinth="80" x="2385" y="600" rotation="90" style="oven" drawerHeights="150"/>
+    <cabinet id="H" name="Teljes magasságú takarófront" type="kitchen" kind="base" width="300" depth="550" height="860" plinth="80" x="2385" y="150" rotation="90" style="filler"/>
     <cabinet id="I" name="Felnyíló felső" type="kitchen" kind="wall" width="620" depth="550" height="400" plinth="0" x="310" y="1925" rotation="0" style="lift" bottom="1900"/>
     <cabinet id="J" name="Kétajtós felső" type="kitchen" kind="wall" width="560" depth="300" height="900" plinth="0" x="900" y="2050" rotation="0" style="double" bottom="1400" shelves="3"/>
     <cabinet id="K" name="Egyajtós felső" type="kitchen" kind="wall" width="300" depth="300" height="900" plinth="0" x="1330" y="2050" rotation="0" style="door" bottom="1400" shelves="3"/>
