@@ -67,9 +67,13 @@ namespace BuildYourFurniture
                     go.GetComponent<MeshRenderer>().sharedMaterial=mat;
                     register(go);
                 }
-                // Solid visible side panels even when adjacent cabinet N is hidden.
-                box("cornerRightFrontSide",cut*.5f,h*.5f,-d*.5f+t*.5f,w-cut,h,t,body);
-                box("cornerLeftSide",-w*.5f+t*.5f,h*.5f,cut*.5f,t,h,d-cut,body);
+                // Complete side panels of the corner cabinet, independent of N visibility.
+                // A real 18mm end panel at the right (+X) edge prevents a see-through gap.
+                box("rightEndPanel",w*.5f-t*.5f,h*.5f,0,t,h,d,body);
+                box("leftEndPanel",-w*.5f+t*.5f,h*.5f,0,t,h,d,body);
+                // Visible straight front sections on either side of the diagonal door.
+                box("frontStraight",cut*.5f,h*.5f,-d*.5f+t*.5f,w-cut,h,t,body);
+                box("sideStraight",-w*.5f+t*.5f,h*.5f,cut*.5f,t,h,d-cut,body);
                 float doorLength=Mathf.Sqrt(2f)*cut;
                 float doorX=-w*.5f+cut*.5f,doorZ=-d*.5f+cut*.5f;
                 float doorAngle=angle+45f;
