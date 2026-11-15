@@ -24,24 +24,25 @@ namespace BuildYourFurniture
                     new Vector3(sx,sy,sz),color,angle);
             if(style=="diagonalCorner")
             {
-                // Five-sided corner carcass: the front-left 300x300 mm corner is removed.
-                // Local -Z faces the kitchen; the diagonal door joins the two exposed edges.
+                // The exposed diagonal is at the RIGHT-FRONT corner (+X,-Z):
+                // this is the corner between the long upper run and the right wall.
+                // The door is proud of the carcass, not recessed behind a side panel.
                 float cut=Mathf.Min(.30f,Mathf.Min(w,d)*.48f);
                 Vector2[] outline={
-                    new Vector2(-w*.5f+cut,-d*.5f),
-                    new Vector2(w*.5f,-d*.5f),
+                    new Vector2(-w*.5f,-d*.5f),
+                    new Vector2(w*.5f-cut,-d*.5f),
+                    new Vector2(w*.5f,-d*.5f+cut),
                     new Vector2(w*.5f,d*.5f),
-                    new Vector2(-w*.5f,d*.5f),
-                    new Vector2(-w*.5f,-d*.5f+cut)
+                    new Vector2(-w*.5f,d*.5f)
                 };
                 if(register!=null)
                 {
                     var vertices=new Vector3[outline.Length*2];
                     for(int i=0;i<outline.Length;i++)
                     {
-                        float x=outline[i].x,cornerZ=outline[i].y;
-                        float px=ox+Mathf.Cos(r)*x+Mathf.Sin(r)*cornerZ;
-                        float pz=oz-Mathf.Sin(r)*x+Mathf.Cos(r)*cornerZ;
+                        float x=outline[i].x,z=outline[i].y;
+                        float px=ox+Mathf.Cos(r)*x+Mathf.Sin(r)*z;
+                        float pz=oz-Mathf.Sin(r)*x+Mathf.Cos(r)*z;
                         vertices[i]=new Vector3(px,bottom,pz);
                         vertices[i+outline.Length]=new Vector3(px,bottom+h,pz);
                     }
@@ -67,27 +68,25 @@ namespace BuildYourFurniture
                     go.GetComponent<MeshRenderer>().sharedMaterial=mat;
                     register(go);
                 }
-                // Complete side panels of the corner cabinet, independent of N visibility.
-                // A real 18mm end panel at the right (+X) edge prevents a see-through gap.
-                box("rightEndPanel",w*.5f-t*.5f,h*.5f,0,t,h,d,body);
+                // Side and front carcass sections stop at the diagonal cut.
                 box("leftEndPanel",-w*.5f+t*.5f,h*.5f,0,t,h,d,body);
-                // Visible straight front sections on either side of the diagonal door.
-                box("frontStraight",cut*.5f,h*.5f,-d*.5f+t*.5f,w-cut,h,t,body);
-                box("sideStraight",-w*.5f+t*.5f,h*.5f,cut*.5f,t,h,d-cut,body);
-                // Exposed 300 mm return at the N-side of the corner: make the
-                // full end face a solid board, not an open edge of the mesh.
-                // It belongs to M, so hiding N cannot remove it.
-                box("exposedNsideEnd",w*.5f-t*.5f,h*.5f,-d*.5f+cut*.5f,t,h,cut,body);
-                box("exposedNsideReturn",w*.5f-cut*.5f,h*.5f,-d*.5f+t*.5f,cut,h,t,body);
-                // Close the top/bottom edges of the clipped cabinet.
-                box("cornerTop",0,h-t*.5f,0,w,t,d,body);
-                box("cornerBottom",0,t*.5f,0,w,t,d,body);
+                box("rightEndPanel",w*.5f-t*.5f,h*.5f,cut*.5f,t,h,d-cut,body);
+                box("frontStraight",-cut*.5f,h*.5f,-d*.5f+t*.5f,w-cut,h,t,body);
+                box("back",0,h*.5f,d*.5f-t*.5f,w,h,t,body);
+                // Close the visible top/bottom of the clipped corner with a five-sided mesh,
+                // instead of full rectangular boxes that protrude through the diagonal.
                 float doorLength=Mathf.Sqrt(2f)*cut;
-                float doorX=-w*.5f+cut*.5f,doorZ=-d*.5f+cut*.5f;
-                float doorAngle=angle+45f;
+                float doorX=w*.5f-cut*.5f;
+                float doorZ=-d*.5f+cut*.5f;
+                float doorAngle=angle-45f;
+                float outward=.016f;
+                float centerX=ox+Mathf.Cos(r)*doorX+Mathf.Sin(r)*doorZ;
+                float centerZ=oz-Mathf.Sin(r)*doorX+Mathf.Cos(r)*doorZ;
+                // Front-facing normal of the diagonal points towards +X,-Z.
+                float nx=Mathf.Cos((angle+45f)*Mathf.Deg2Rad);
+                float nz=-Mathf.Sin((angle+45f)*Mathf.Deg2Rad);
                 cube(id+"_diagonalDoor",
-                    new Vector3(ox+Mathf.Cos(r)*doorX+Mathf.Sin(r)*doorZ,
-                        bottom+h*.5f,oz-Mathf.Sin(r)*doorX+Mathf.Cos(r)*doorZ),
+                    new Vector3(centerX+nx*outward,bottom+h*.5f,centerZ+nz*outward),
                     new Vector3(doorLength-.004f,h-.004f,frontT),front,doorAngle);
                 return;
             }
@@ -131,6 +130,19 @@ namespace BuildYourFurniture
                 {
                     float hh=heights[i];float dw=style=="sink"?N(e,"drawerFrontWidth",340)/1000f:w-.004f;float dx=style=="sink"?-w*.5f+dw*.5f+.002f:0;box("drawer"+i,dx,yy+hh*.5f,z,dw,hh-.003f,frontT,front);
                     box("handle"+i,style=="sink"?-w*.5f+N(e,"drawerFrontWidth",340)/2000f:0,yy+hh*.5f,z-.02f,.12f,.009f,.012f,dark);yy+=hh;
+                }
+                if(style=="sink")
+                {
+                    // The two 340 mm drawer fronts cover only part of D.
+                    // Close the remaining opening with a full-height door front.
+                    float drawerWidth=N(e,"drawerFrontWidth",340)/1000f;
+                    float doorWidth=w-drawerWidth-.006f;
+                    if(doorWidth>.02f)
+                    {
+                        float doorX=-w*.5f+drawerWidth+doorWidth*.5f+.003f;
+                        box("sinkSideDoor",doorX,y0+inner*.5f,z,doorWidth,inner-.004f,frontT,front);
+                        box("sinkSideHandle",doorX+doorWidth*.35f,y0+inner*.5f,z-.02f,.012f,.14f,.012f,dark);
+                    }
                 }
             }
             else if(style=="double")
