@@ -37,6 +37,7 @@ namespace BuildYourFurniture
         bool showKitchenMaterials;
         string kitchenColorTarget="";
         float kitchenHue=.58f,kitchenSaturation=.35f,kitchenValue=.55f;
+        Texture2D kitchenPaletteTexture;
         Vector2 kitchenMaterialsScroll;
         bool apartmentOverview=true;
         bool roomNavigationOpen;
@@ -164,31 +165,56 @@ namespace BuildYourFurniture
         bool furnitureResizeMode;
         int furnitureEditMode; // 0 Move, 1 Resize, 2 Rotate
         readonly string[] addKinds={"Gardrób / szekrény","Íróasztal","Franciaágy","Kanapé","TV-állvány","LED TV","Térelválasztó polc","Étkezőasztal","Dohányzóasztal","Szőnyeg","Könyv","Cserepes virág","Növény"};
-        void DrawKitchenMaterials(float barHeight)
+        void EnsureKitchenPalette()
+        {
+            if(kitchenPaletteTexture!=null)return;
+            kitchenPaletteTexture=new Texture2D(256,192,TextureFormat.RGB24,false);
+            kitchenPaletteTexture.wrapMode=TextureWrapMode.Clamp;
+            for(int py=0;py<192;py++)
+            for(int px=0;px<256;px++)
+                kitchenPaletteTexture.SetPixel(px,py,Color.HSVToRGB(px/255f,py/191f,1f));
+            kitchenPaletteTexture.Apply();
+        }
+        void ApplyKitchenColor()
         {
             var defaults=plan?.Root?.Element("cabinetry")?.Element("defaults");
-            if(defaults==null || string.IsNullOrEmpty(kitchenColorTarget))return;
-            var rect=new Rect(170,barHeight+43,315,255);
-            DrawOpaquePanel(rect);GUI.Box(rect,kitchenColorTarget=="bodyColor"?"Bútorlap színe":"Ajtófront színe");
-            GUILayout.BeginArea(new Rect(rect.x+12,rect.y+28,rect.width-24,rect.height-40));
-            GUILayout.Label("Árnyalat");
-            kitchenHue=GUILayout.HorizontalSlider(kitchenHue,0,1);
-            GUILayout.Label("Telítettség");
-            kitchenSaturation=GUILayout.HorizontalSlider(kitchenSaturation,0,1);
-            GUILayout.Label("Világosság");
-            kitchenValue=GUILayout.HorizontalSlider(kitchenValue,0,1);
-            Color c=Color.HSVToRGB(kitchenHue,kitchenSaturation,kitchenValue);
-            string hex="#"+ColorUtility.ToHtmlStringRGB(c);
-            GUILayout.Label("Kiválasztott szín: "+hex);
-            var oldColor=GUI.color;GUI.color=c;
-            GUILayout.Box("                    ",GUILayout.Height(24));
-            GUI.color=oldColor;
-            GUILayout.BeginHorizontal();
-            if(GUILayout.Button("Alkalmaz",GUILayout.Height(30)))
-            {defaults.SetAttributeValue(kitchenColorTarget,hex);SaveLaminates();RefreshViewerGeometry();kitchenColorTarget="";}
-            if(GUILayout.Button("Mégse",GUILayout.Height(30)))kitchenColorTarget="";
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
+            if(defaults==null||string.IsNullOrEmpty(kitchenColorTarget))return;
+            string hex="#"+ColorUtility.ToHtmlStringRGB(Color.HSVToRGB(kitchenHue,kitchenSaturation,kitchenValue));
+            if((string)defaults.Attribute(kitchenColorTarget)==hex)return;
+            defaults.SetAttributeValue(kitchenColorTarget,hex);
+            RefreshViewerGeometry();
+        }
+        void DrawKitchenMaterials(float barHeight)
+        {
+            if(string.IsNullOrEmpty(kitchenColorTarget))return;
+            EnsureKitchenPalette();
+            var rect=new Rect(170,barHeight+43,325,325);
+            DrawOpaquePanel(rect);
+            GUI.Box(rect,kitchenColorTarget=="bodyColor"?"Bútorlap – színválasztó":"Ajtófront – színválasztó");
+            var palette=new Rect(rect.x+12,rect.y+32,300,210);
+            GUI.DrawTexture(palette,kitchenPaletteTexture,ScaleMode.StretchToFill);
+            Event ev=Event.current;
+            if((ev.type==EventType.MouseDown||ev.type==EventType.MouseDrag) && ev.button==0 && palette.Contains(ev.mousePosition))
+            {
+                kitchenHue=Mathf.Clamp01((ev.mousePosition.x-palette.x)/palette.width);
+                kitchenSaturation=1f-Mathf.Clamp01((ev.mousePosition.y-palette.y)/palette.height);
+                ApplyKitchenColor();
+                ev.Use();
+            }
+            float px=palette.x+kitchenHue*palette.width;
+            float py=palette.y+(1f-kitchenSaturation)*palette.height;
+            GUI.Label(new Rect(px-9,py-12,24,24),"◎");
+            GUI.Label(new Rect(rect.x+12,rect.y+246,130,22),"Fényerő");
+            float brightness=GUI.HorizontalSlider(new Rect(rect.x+145,rect.y+253,160,18),kitchenValue,0f,1f);
+            if(!Mathf.Approximately(brightness,kitchenValue))
+            {kitchenValue=brightness;ApplyKitchenColor();}
+            var selected=Color.HSVToRGB(kitchenHue,kitchenSaturation,kitchenValue);
+            var old=GUI.color;GUI.color=selected;
+            GUI.Box(new Rect(rect.x+12,rect.y+273,75,30),"");
+            GUI.color=old;
+            GUI.Label(new Rect(rect.x+96,rect.y+279,130,22),"#"+ColorUtility.ToHtmlStringRGB(selected));
+            if(GUI.Button(new Rect(rect.x+235,rect.y+275,75,29),"Bezárás"))
+            {SaveLaminates();kitchenColorTarget="";}
         }
         void OpenKitchenColor(string target)
         {
