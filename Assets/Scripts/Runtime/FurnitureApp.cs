@@ -275,7 +275,7 @@ namespace BuildYourFurniture
                 GUI.color=swatchColor;
                 GUI.DrawTexture(new Rect(swatch.x+1,swatch.y+1,swatch.width-2,swatch.height-2),Texture2D.whiteTexture);
                 GUI.color=old;
-                if(GUI.Button(swatch,new GUIContent("",kitchenPresetNames[i])))
+                if(GUI.Button(swatch,new GUIContent("",kitchenPresetNames[i]),GUIStyle.none))
                     SetKitchenColor(swatchColor);
                 GUI.Label(new Rect(swatch.x+2,swatch.y+swatch.height-16,swatch.width-3,16),
                     new GUIContent(kitchenPresetNames[i]));
